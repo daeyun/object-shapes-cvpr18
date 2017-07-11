@@ -23,8 +23,7 @@
 #include <EGL/egl.h>
 #include <GL/gl.h>
 
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>

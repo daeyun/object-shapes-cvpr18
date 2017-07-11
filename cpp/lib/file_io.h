@@ -7,7 +7,7 @@
 #include <string>
 #include <functional>
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/opencv.hpp>
 
 #include "common.h"
 

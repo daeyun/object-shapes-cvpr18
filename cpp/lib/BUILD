@@ -89,6 +89,7 @@ cc_library(
         ":benchmark",
         ":common",
         ":flags",
+        "//external:blosc",
         "//external:gflags",
         "//third_party:assimp",
         "//third_party:glog",

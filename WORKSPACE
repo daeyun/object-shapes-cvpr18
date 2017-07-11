@@ -104,6 +104,7 @@ boost_deps()
 new_http_archive(
     name = "blosc_archive",
     build_file = "third_party/blosc.BUILD",
+    strip_prefix = "c-blosc-1.12.0",
     urls = [
         "https://github.com/Blosc/c-blosc/archive/v1.12.0.tar.gz",
     ],

@@ -4,8 +4,14 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "opencv",
-    srcs = glob([
-        "install/opencv/lib/*.a",
+
+    # Order matters. See pkgconfig/opencv.pc
+    srcs = [
+        "install/opencv/lib/libopencv_highgui.a",
+        "install/opencv/lib/libopencv_imgcodecs.a",
+        "install/opencv/lib/libopencv_imgproc.a",
+        "install/opencv/lib/libopencv_core.a",
+    ] + glob([
         "install/opencv/share/OpenCV/**/*.a",
     ]),
     hdrs = glob(["install/opencv/include/**"]),
@@ -16,8 +22,10 @@ cc_library(
         "-lm",
         "-pthread",
         "-lz",
+        "-ljpeg",
+        "-lpng",
+        "-lrt",
     ],
-    linkstatic = 1,
 )
 
 # Uses namespace "google" instead of "gflags".
@@ -85,5 +93,9 @@ cc_library(
     ]),
     hdrs = glob(["install/assimp/include/**"]),
     includes = ["install/assimp/include"],
+    linkopts = [
+        "-lstdc++",
+        "-lz",
+    ],
     linkstatic = 1,
 )
