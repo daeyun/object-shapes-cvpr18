@@ -1,0 +1,36 @@
+[submodule "third_party/eigen"]
+	path = third_party/eigen
+	url = https://github.com/RLovelett/eigen.git
+[submodule "third_party/repos/eigen"]
+	path = third_party/repos/eigen
+	url = https://github.com/RLovelett/eigen.git
+[submodule "third_party/repos/c-blosc"]
+	path = third_party/repos/c-blosc
+	url = https://github.com/Blosc/c-blosc.git
+[submodule "third_party/repos/googletest"]
+	path = third_party/repos/googletest
+	url = https://github.com/google/googletest
+[submodule "third_party/repos/protobuf"]
+	path = third_party/repos/protobuf
+	url = https://github.com/google/protobuf.git
+[submodule "third_party/repos/cpp-lru-cache"]
+	path = third_party/repos/cpp-lru-cache
+	url = https://github.com/lamerman/cpp-lru-cache.git
+[submodule "third_party/repos/cpp_gsl"]
+	path = third_party/repos/cpp_gsl
+	url = https://github.com/Microsoft/GSL.git
+[submodule "third_party/repos/assimp"]
+	path = third_party/repos/assimp
+	url = https://github.com/assimp/assimp.git
+[submodule "third_party/repos/opencv"]
+	path = third_party/repos/opencv
+	url = https://github.com/opencv/opencv.git
+[submodule "third_party/repos/tensorflow"]
+	path = third_party/repos/tensorflow
+	url = https://github.com/tensorflow/tensorflow.git
+[submodule "third_party/repos/glog"]
+	path = third_party/repos/glog
+	url = https://github.com/google/glog.git
+[submodule "third_party/repos/gflags"]
+	path = third_party/repos/gflags
+	url = https://github.com/gflags/gflags.git
