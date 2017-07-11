@@ -67,14 +67,18 @@ cc_library(
     name = "egl_rendering",
     srcs = ["egl_rendering.cc"],
     hdrs = ["egl_rendering.h"],
+    linkopts = [
+        "-lEGL",
+        "-lGLESv2",
+    ],
     visibility = ["//visibility:public"],
     deps = [
         ":camera",
         ":common",
         ":file_io",
         ":resources",
-        "//external:gflags",
         "//third_party:assimp",
+        "//third_party:gflags",
         "//third_party:glog",
         "//third_party:opencv",
     ],
@@ -89,9 +93,9 @@ cc_library(
         ":benchmark",
         ":common",
         ":flags",
-        "//external:blosc",
-        "//external:gflags",
         "//third_party:assimp",
+        "//third_party:blosc",
+        "//third_party:gflags",
         "//third_party:glog",
         "//third_party:opencv",
         "@boost//:filesystem",
@@ -104,7 +108,7 @@ cc_library(
     hdrs = ["flags.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//external:gflags",
+        "//third_party:gflags",
     ],
 )
 
@@ -117,7 +121,7 @@ cc_library(
         ":common",
         ":file_io",
         ":flags",
-        "//external:gflags",
+        "//third_party:gflags",
         "//third_party:glog",
     ],
 )
@@ -129,7 +133,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":common",
-        "//external:gflags",
+        "//third_party:gflags",
         "//third_party:glog",
     ],
 )
@@ -163,7 +167,7 @@ cc_library(
         ":common",
         ":file_io",
         ":string_utils",
-        "//external:gflags",
+        "//third_party:gflags",
         "//third_party:glog",
     ],
 )

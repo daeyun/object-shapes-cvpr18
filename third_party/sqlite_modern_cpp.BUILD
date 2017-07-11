@@ -8,4 +8,5 @@ cc_library(
     include_prefix = "sqlite_modern_cpp",
     includes = ["hdr"],
     strip_include_prefix = "hdr",
+    deps = ["@//third_party:sqlite3"]
 )

@@ -40,7 +40,7 @@ cc_library(
         "-pthread",
     ],
     linkstatic = 1,
-    visibility = ["//visibility:private"],
+    #    visibility = ["//visibility:private"],
 )
 
 cc_library(
@@ -97,5 +97,29 @@ cc_library(
         "-lstdc++",
         "-lz",
     ],
+    linkstatic = 1,
+)
+
+cc_library(
+    name = "sqlite3",
+    srcs = glob([
+        "install/sqlite3/lib/libsqlite3.a",
+    ]),
+    hdrs = glob(["install/sqlite3/include/**"]),
+    includes = ["install/sqlite3/include"],
+    linkopts = [
+        "-ldl",
+        "-lpthread",
+    ],
+    linkstatic = 1,
+)
+
+cc_library(
+    name = "blosc",
+    srcs = glob([
+        "install/c-blosc/lib/libblosc.a",
+    ]),
+    hdrs = glob(["install/c-blosc/include/**"]),
+    includes = ["install/c-blosc/include"],
     linkstatic = 1,
 )
