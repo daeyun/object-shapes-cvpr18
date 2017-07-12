@@ -4,6 +4,16 @@ package(default_visibility = ["//visibility:public"])
 
 cc_library(
     name = "opencv",
+    srcs = glob([
+        "install/opencv/lib/*.so",
+        "install/opencv/lib/*.so.*",
+    ]),
+    hdrs = glob(["install/opencv/include/**"]),
+    includes = ["install/opencv/include"],
+)
+
+cc_library(
+    name = "opencv_static",
 
     # Order matters. See pkgconfig/opencv.pc
     srcs = [
@@ -31,9 +41,7 @@ cc_library(
 # Uses namespace "google" instead of "gflags".
 cc_library(
     name = "gflags",
-    srcs = glob([
-        "install/gflags/lib/libgflags.a",
-    ]),
+    srcs = ["install/gflags/lib/libgflags.a"],
     hdrs = glob(["install/gflags/include/**"]),
     includes = ["install/gflags/include"],
     linkopts = [
@@ -45,9 +53,7 @@ cc_library(
 
 cc_library(
     name = "glog",
-    srcs = glob([
-        "install/glog/lib/libglog.a",
-    ]),
+    srcs = ["install/glog/lib/libglog.a"],
     hdrs = glob(["install/glog/include/**"]),
     includes = ["install/glog/include"],
     linkopts = [
@@ -59,9 +65,7 @@ cc_library(
 
 cc_library(
     name = "tensorflow",
-    srcs = glob([
-        "install/tensorflow/lib/libtensorflow_cc.so",
-    ]),
+    srcs = ["install/tensorflow/lib/libtensorflow_cc.so"],
     hdrs = glob(
         [
             "install/tensorflow/include/tf/**/*.h",
@@ -102,8 +106,10 @@ cc_library(
 
 cc_library(
     name = "sqlite3",
-    srcs = glob([
+    srcs = [
         "install/sqlite3/lib/libsqlite3.a",
+    ] + glob([
+        "install/sqlite3/lib/libsqlite3.so*",
     ]),
     hdrs = glob(["install/sqlite3/include/**"]),
     includes = ["install/sqlite3/include"],
@@ -116,9 +122,10 @@ cc_library(
 
 cc_library(
     name = "blosc",
-    srcs = glob([
+    srcs = [
         "install/c-blosc/lib/libblosc.a",
-    ]),
+        "install/c-blosc/lib/libblosc.so",
+    ],
     hdrs = glob(["install/c-blosc/include/**"]),
     includes = ["install/c-blosc/include"],
     linkstatic = 1,

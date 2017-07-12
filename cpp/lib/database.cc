@@ -111,7 +111,8 @@ int ReadRenderables(const string &sqlite_file, const std::string &view_name, vec
   sqlite::sqlite_config config;
   config.flags = sqlite::OpenFlags::READONLY;
   sqlite::database db(FileIO::FullDataPath(sqlite_file), config);
-  return ReadRenderables(db, view_name, out);
+  auto ret = ReadRenderables(db, view_name, out);
+  return ret;
 }
 
 string ToString(const mvshape_dataset::Rendering &rendering) {

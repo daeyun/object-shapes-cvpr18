@@ -19,5 +19,7 @@ std::string ResourcePath(const std::string &filename);
 
 std::string ReadResource(const std::string &filename);
 
+std::string FindResourceDir();
+
 }
 }

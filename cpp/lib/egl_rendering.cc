@@ -330,5 +330,6 @@ void Renderer::CreateEglContext() {
   egl_surface_ = surface;
   egl_display_ = display;
 }
+
 }
 }

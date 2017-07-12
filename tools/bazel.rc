@@ -1,2 +1,5 @@
-build --cxxopt='-std=c++14'
-build --copt='-Wno-sign-compare'
+build --cxxopt=-std=c++14
+build --copt=-Wno-sign-compare
+build:opt -c opt --copt=-O3 --copt=-mfpmath=sse
+
+test --test_output=streamed

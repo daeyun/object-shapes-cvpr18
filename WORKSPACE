@@ -1,14 +1,30 @@
+workspace(name = "com_example_project")
+
 http_archive(
     name = "com_google_protobuf",
-    strip_prefix = "protobuf-b4b0e304be5a68de3d0ee1af9b286f958750f5e4",
-    urls = ["https://github.com/google/protobuf/archive/b4b0e30.zip"],
+    strip_prefix = "protobuf-3.3.0",
+    urls = ["https://github.com/google/protobuf/releases/download/v3.3.0/protobuf-cpp-3.3.0.tar.gz"],
 )
 
 http_archive(
     name = "com_google_protobuf_cc",
-    strip_prefix = "protobuf-b4b0e304be5a68de3d0ee1af9b286f958750f5e4",
-    urls = ["https://github.com/google/protobuf/archive/b4b0e30.zip"],
+    strip_prefix = "protobuf-3.3.0",
+    urls = ["https://github.com/google/protobuf/releases/download/v3.3.0/protobuf-cpp-3.3.0.tar.gz"],
 )
+
+
+#git_repository(
+#    name = "com_google_protobuf",
+#    remote = "https://github.com/google/protobuf.git",
+#    tag = "v3.1.0",
+#)
+#
+#git_repository(
+#    name = "com_google_protobuf_cc",
+#    remote = "https://github.com/google/protobuf.git",
+#    tag = "v3.1.0",
+#)
+
 
 new_http_archive(
     name = "eigen3_archive",
@@ -99,21 +115,6 @@ http_archive(
 load("@com_github_nelhage_boost//:boost/boost.bzl", "boost_deps")
 
 boost_deps()
-
-# blosc
-new_http_archive(
-    name = "blosc_archive",
-    build_file = "third_party/blosc.BUILD",
-    strip_prefix = "c-blosc-1.12.0",
-    urls = [
-        "https://github.com/Blosc/c-blosc/archive/v1.12.0.tar.gz",
-    ],
-)
-
-bind(
-    name = "blosc",
-    actual = "@blosc_archive//:blosc",
-)
 
 # gtest, gmock
 new_http_archive(

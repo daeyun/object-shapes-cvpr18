@@ -40,6 +40,8 @@ class Renderer {
  public:
   explicit Renderer(const RendererConfig &config) : config_(config) {}
 
+  virtual ~Renderer() {}
+
   virtual void Render(const vector<mvshape::Camera *> &cameras, vector<vector<unique_ptr<cv::Mat>>> *out_frames) = 0;
 
   virtual void Render(const vector<mvshape::Rendering::FrameConfig> &frame_configs,

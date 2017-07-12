@@ -44,6 +44,7 @@ std::string FindResourceDir() {
     auto path = boost::filesystem::path(PathToExecutable());
     while (true) {
       if (path.string() == "/") {
+        LOG(FATAL) << "Could not find resources directory.";
         p = "./resources";
         break;
       }
@@ -54,7 +55,9 @@ std::string FindResourceDir() {
       path = path.parent_path();
     }
   }
-  auto ret = boost::filesystem::canonical(p).string();
+
+  // Preserves symlinks.
+  auto ret = boost::filesystem::absolute(p).string();
   resource_path = ret;
   LOG(INFO) << "Path to 'resources' dir: " << resource_path;
   return ret;

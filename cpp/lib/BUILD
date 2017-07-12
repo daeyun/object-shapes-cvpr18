@@ -2,6 +2,7 @@ cc_library(
     name = "common",
     srcs = ["common.cc"],
     hdrs = ["common.h"],
+    visibility = ["//visibility:public"],
     deps = [
         "//external:cpp_gsl",
         "//external:eigen3",
@@ -65,7 +66,9 @@ cc_library(
 
 cc_library(
     name = "egl_rendering",
-    srcs = ["egl_rendering.cc"],
+    srcs = [
+        "egl_rendering.cc",
+    ],
     hdrs = ["egl_rendering.h"],
     linkopts = [
         "-lEGL",
@@ -84,9 +87,12 @@ cc_library(
     ],
 )
 
+# This should be small.
 cc_library(
     name = "file_io",
-    srcs = ["file_io.cc"],
+    srcs = [
+        "file_io.cc",
+    ],
     hdrs = ["file_io.h"],
     visibility = ["//visibility:public"],
     deps = [
@@ -133,6 +139,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":common",
+        "//external:cpp_gsl",
         "//third_party:gflags",
         "//third_party:glog",
     ],

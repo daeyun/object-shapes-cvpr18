@@ -9,6 +9,8 @@
 #include <glog/logging.h>
 #include <gsl/gsl_assert>
 
+#include "common.h"
+
 namespace mvshape {
 namespace MP {
 
