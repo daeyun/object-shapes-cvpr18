@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RunConfigurationProducerService">
+    <option name="ignoredProducers">
+      <set>
+        <option value="com.jetbrains.cidr.cpp.execution.testing.google.CMakeGoogleTestRunConfigurationProducer" />
+        <option value="com.jetbrains.cidr.cpp.execution.testing.tcatch.CMakeCatchTestRunConfigurationProducer" />
+        <option value="com.jetbrains.python.run.PythonRunConfigurationProducer" />
+        <option value="com.jetbrains.python.testing.doctest.PythonDocTestConfigurationProducer" />
+        <option value="com.jetbrains.python.testing.nosetest.PythonNoseTestConfigurationProducer" />
+        <option value="com.jetbrains.python.testing.pytest.PyTestConfigurationProducer" />
+        <option value="com.jetbrains.python.testing.unittest.PythonUnitTestConfigurationProducer" />
+        <option value="com.jetbrains.python.testing.universalTests.PyUniversalTestsConfigurationProducer" />
+      </set>
+    </option>
+  </component>
+</project>
