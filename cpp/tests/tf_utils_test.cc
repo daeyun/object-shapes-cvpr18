@@ -25,7 +25,6 @@ TEST(Tensorflow, Basics) {
   // Run and fetch v
   TF_CHECK_OK(session.Run({v}, &outputs));
   // Expect outputs[0] == [19; -3]
-  LOG(INFO) << outputs[0].matrix<float>();
 
   EXPECT_FLOAT_EQ(19, outputs[0].matrix<float>()(0));
   EXPECT_FLOAT_EQ(-3, outputs[0].matrix<float>()(1));

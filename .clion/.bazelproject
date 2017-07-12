@@ -11,4 +11,4 @@ targets:
 
 additional_languages:
   # Uncomment any additional languages you want supported
-  # python
+  python
