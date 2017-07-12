@@ -12,20 +12,6 @@ http_archive(
     urls = ["https://github.com/google/protobuf/releases/download/v3.3.0/protobuf-cpp-3.3.0.tar.gz"],
 )
 
-
-#git_repository(
-#    name = "com_google_protobuf",
-#    remote = "https://github.com/google/protobuf.git",
-#    tag = "v3.1.0",
-#)
-#
-#git_repository(
-#    name = "com_google_protobuf_cc",
-#    remote = "https://github.com/google/protobuf.git",
-#    tag = "v3.1.0",
-#)
-
-
 new_http_archive(
     name = "eigen3_archive",
     build_file = "third_party/eigen3.BUILD",
