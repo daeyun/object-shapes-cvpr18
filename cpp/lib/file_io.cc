@@ -66,6 +66,8 @@ std::string ToBytes(const vector<T> &values) {
   return stream.str();
 }
 
+template std::string ToBytes<float>(const vector<float> &values);
+
 std::string ReadBytes(const std::string &path) {
   auto canonical_path = boost::filesystem::canonical(path).string();
   std::ifstream stream(canonical_path);

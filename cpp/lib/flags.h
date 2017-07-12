@@ -11,3 +11,6 @@ namespace gflags=google;
 DECLARE_string(data_dir);
 DECLARE_string(out_dir);
 DECLARE_string(resources_dir);
+DECLARE_bool(is_test_mode);
+DECLARE_string(tf_model);
+DECLARE_string(run_id);

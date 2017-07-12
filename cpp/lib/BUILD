@@ -178,3 +178,20 @@ cc_library(
         "//third_party:glog",
     ],
 )
+
+cc_library(
+    name = "tf_utils",
+    srcs = ["tf_utils.cc"],
+    hdrs = ["tf_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":common",
+        ":flags",
+        ":resources",
+        ":string_utils",
+        "//third_party:gflags",
+        "//third_party:glog",
+        "//third_party:tensorflow",
+        "@boost//:filesystem",
+    ],
+)

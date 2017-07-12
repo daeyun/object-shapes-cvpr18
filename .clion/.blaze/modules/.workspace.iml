@@ -10,6 +10,7 @@
       <excludeFolder url="file://$USER_HOME$/git/mvshape/bazel-testlogs" />
       <excludeFolder url="file://$USER_HOME$/git/mvshape/third_party/repos" />
       <excludeFolder url="file://$USER_HOME$/git/mvshape/third_party/install" />
+      <excludeFolder url="file://$USER_HOME$/git/mvshape/python" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

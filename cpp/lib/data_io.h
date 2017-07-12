@@ -62,6 +62,7 @@ class RenderingReader {
 };
 
 struct BatchData {
+  // TODO: rename file_fields.
   std::unordered_map<int, string> file_fields;
   std::vector<int> example_indices;
   int size = 0;

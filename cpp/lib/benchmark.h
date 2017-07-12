@@ -33,7 +33,7 @@ class Timer {
   }
 
   template<typename Unit=std::ratio<1, 1>>
-  double Elapsed() {
+  double Duration() {
     constexpr double ratio = kMicro * Unit::den / Unit::num;
     return running_average_microseconds_ * ratio;
   }

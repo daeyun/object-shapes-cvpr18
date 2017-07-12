@@ -2,14 +2,14 @@ workspace(name = "mvshape")
 
 http_archive(
     name = "com_google_protobuf",
-    strip_prefix = "protobuf-3.3.0",
-    urls = ["https://github.com/google/protobuf/releases/download/v3.3.0/protobuf-cpp-3.3.0.tar.gz"],
+    strip_prefix = "protobuf-3.2.0",
+    urls = ["https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz"],
 )
 
 http_archive(
     name = "com_google_protobuf_cc",
-    strip_prefix = "protobuf-3.3.0",
-    urls = ["https://github.com/google/protobuf/releases/download/v3.3.0/protobuf-cpp-3.3.0.tar.gz"],
+    strip_prefix = "protobuf-3.2.0",
+    urls = ["https://github.com/google/protobuf/releases/download/v3.2.0/protobuf-cpp-3.2.0.tar.gz"],
 )
 
 new_http_archive(

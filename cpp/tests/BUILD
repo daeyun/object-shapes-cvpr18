@@ -125,6 +125,8 @@ cc_test(
     copts = ["-Icpp/lib"],
     deps = [
         ":test_main",
+        "//cpp/lib:random_utils",
+        "//cpp/lib:tf_utils",
         "//third_party:tensorflow",
     ],
 )

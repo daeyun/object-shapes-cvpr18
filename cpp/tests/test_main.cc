@@ -14,6 +14,7 @@ GTEST_API_ int main(int argc, char **argv) {
   fflush(stderr);
   google::InitGoogleLogging(argv[0]);
   FLAGS_logtostderr = 1;
+  FLAGS_is_test_mode = 1;
 
   FLAGS_resources_dir = mvshape::Resources::FindResourceDir();
   FLAGS_data_dir = FLAGS_resources_dir + "/data";

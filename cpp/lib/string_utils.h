@@ -11,7 +11,7 @@
 namespace mvshape {
 
 template<typename T>
-vector<T> SplitValues(const string &str, char delimiter=',') {
+vector<T> SplitValues(const string &str, char delimiter = ',') {
   std::vector<T> values;
   std::stringstream stream(str);
   T value;
@@ -34,10 +34,12 @@ vector<T> SplitValues(const string &str, char delimiter=',') {
 }
 
 template<int rows, int cols = 1>
-Eigen::Matrix<double, rows, cols> ParseMatrix(const string &str, char delimiter=',') {
+Eigen::Matrix<double, rows, cols> ParseMatrix(const string &str, char delimiter = ',') {
   auto values = SplitValues<double>(str, delimiter);
   Ensures(values.size() == rows * cols);
   return Eigen::Matrix<double, rows, cols>(values.data());
 }
+
+std::string WithLeadingZeros(int value, int num_digits);
 
 }

@@ -1,5 +1,7 @@
 import numpy as np
 import tensorflow as tf
+import typing
+from os import path
 
 
 def logistic_loss(value: tf.Tensor, target: tf.Tensor, name='logistic_loss') -> tf.Tensor:
@@ -113,3 +115,26 @@ def mean_iou_2d(value: tf.Tensor, target: tf.Tensor, threshold=0.0, name='iou') 
         union = tf.reduce_sum(tf.to_float(tf.logical_or(v, target)), reduction_indices=dims)
         iou = tf.reduce_mean(tf.div(intersection, union), name=scope)
     return iou
+
+
+def variables_to_save(graph: tf.Graph) -> typing.Sequence:
+    vars_to_save = graph.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+
+    # TODO
+    vars_to_save += graph.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+
+    vars_to_save += graph.get_collection(tf.GraphKeys.MODEL_VARIABLES)
+    vars_to_save += graph.get_collection(tf.GraphKeys.MOVING_AVERAGE_VARIABLES)
+    unique_vars = {}
+    for item in vars_to_save:
+        unique_vars[item.name] = item
+    vars_to_save = list(unique_vars.values())
+
+    return vars_to_save
+
+
+def is_model_directory(dirname):
+    return (path.isdir(dirname)
+            and (path.isfile(path.join(dirname, 'saved_model.pbtxt'))
+                 or path.isfile(path.join(dirname, 'saved_model.pb')))
+            and path.isdir(path.join(dirname, 'variables')))
