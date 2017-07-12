@@ -117,3 +117,14 @@ cc_test(
         "//cpp/lib:string_utils",
     ],
 )
+
+cc_test(
+    name = "tf_utils_test",
+    size = "small",
+    srcs = ["tf_utils_test.cc"],
+    copts = ["-Icpp/lib"],
+    deps = [
+        ":test_main",
+        "//third_party:tensorflow",
+    ],
+)
