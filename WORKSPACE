@@ -1,4 +1,4 @@
-workspace(name = "com_example_project")
+workspace(name = "mvshape")
 
 http_archive(
     name = "com_google_protobuf",
