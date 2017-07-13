@@ -3,9 +3,11 @@
 //
 
 #include <gtest/gtest.h>
+#include <glog/logging.h>
 
 #include "file_io.h"
 #include "resources.h"
+#include "boost/filesystem/path.hpp"
 
 using namespace mvshape;
 
@@ -37,4 +39,19 @@ TEST(FileIO, ReadTriangleMesh) {
   auto filename = Resources::ResourcePath("objects/1a74a83fa6d24b3cacd67ce2c72c02e/model.obj");
   auto triangles = FileIO::ReadTriangles(filename);
   EXPECT_EQ(triangles.size(), 8376);
+}
+
+TEST(FileIO, ListFilesInDir) {
+  auto dirname = Resources::ResourcePath("objects/1a74a83fa6d24b3cacd67ce2c72c02e/");
+  auto files = FileIO::RegularFilesInDirectory(dirname);
+  EXPECT_EQ(2, files.size());
+}
+
+TEST(FileIO, LastPathComponent) {
+  EXPECT_EQ("3", boost::filesystem::path("/1/2/3").remove_trailing_separator().stem().string());
+
+  std::string s = "/1/2/3/";
+  EXPECT_EQ("3", boost::filesystem::path(s).remove_trailing_separator().stem().string());
+
+  EXPECT_EQ("/1/2/3/", s);
 }

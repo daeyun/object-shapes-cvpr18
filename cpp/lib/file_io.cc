@@ -126,7 +126,24 @@ void SerializeTensor(const std::string &filename, const void *data, const std::v
   Ensures(Exists(absolute_path));
 }
 
+vector<string> RegularFilesInDirectory(const string &dir) {
+  fs::path path(dir);
+  vector<string> paths;
+  if (fs::exists(path) && fs::is_directory(path)) {
+    fs::directory_iterator end_iter;
+    for (fs::directory_iterator dir_iter(path); dir_iter != end_iter; ++dir_iter) {
+      if (fs::is_regular_file(dir_iter->status())) {
+        paths.push_back(dir_iter->path().string());
+      }
+    }
+  }
+  std::sort(std::begin(paths), std::end(paths));
+
+  return paths;
+}
+
 string WriteIndexFile(const string &dirname, int index) {
+  // TODO
   std::ofstream file;
   auto absolute_dir_path = boost::filesystem::absolute(dirname).string();
   PrepareDir(absolute_dir_path);
@@ -338,6 +355,7 @@ string FullOutPath(const string &path) {
   }
   return (data_dir / fs::path(p)).string();
 }
+
 
 }  // namespace FileIO
 }  // namespace mvshape

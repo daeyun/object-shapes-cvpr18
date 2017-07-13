@@ -3,3 +3,4 @@ build --copt=-Wno-sign-compare
 build:opt -c opt --copt=-Ofast --copt=-march=native --copt=-mfpmath=sse
 
 test --test_output=streamed
+build:dbg --copt=-g --copt=-ggdb

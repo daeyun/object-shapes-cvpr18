@@ -35,6 +35,7 @@ cc_library(
     hdrs = ["data_io.h"],
     visibility = ["//visibility:public"],
     deps = [
+        ":batch_queue",
         ":benchmark",
         ":camera",
         ":common",
@@ -45,7 +46,6 @@ cc_library(
         ":random_utils",
         ":transforms",
         "//external:cpp_lru_cache",
-        "//external:cqueue",
         "//proto:dataset_cc_proto",
     ],
 )
@@ -189,9 +189,24 @@ cc_library(
         ":flags",
         ":resources",
         ":string_utils",
+        "//proto:dataset_cc_proto",
         "//third_party:gflags",
         "//third_party:glog",
         "//third_party:tensorflow",
+        "@boost//:algorithm",
         "@boost//:filesystem",
+    ],
+)
+
+cc_library(
+    name = "batch_queue",
+    srcs = ["batch_queue.cc"],
+    hdrs = ["batch_queue.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":camera",
+        ":common",
+        ":file_io",
+        "//external:cqueue",
     ],
 )

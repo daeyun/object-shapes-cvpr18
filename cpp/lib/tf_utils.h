@@ -11,12 +11,14 @@
 #include "tensorflow/core/framework/types.h"
 #include "tensorflow/core/lib/gtl/array_slice.h"
 #include "tensorflow/core/framework/tensor.h"
+#include "proto/dataset.pb.h"
 
 #include "common.h"
 
 namespace mvshape {
 namespace tf_utils {
 namespace tf = tensorflow;
+namespace mv = mvshape_dataset;
 
 int LoadSavedModel(const std::unordered_set<std::string> &tags, tf::SavedModelBundle *model);
 
@@ -94,12 +96,20 @@ int RestoreCheckpoint(tf::Session *session, const string &filename);
 
 int IncrementEpochCount(tf::Session *session);
 
-static bool DidChange(int value) {
-  static int prev = value;
-  bool changed = value!=prev;
-  prev = value;
-  return changed;
-}
+// Returns true if this function has been called more than once and `value` is not the same as the previous call.
+bool DidChange(int value);
+
+// Returns {epoch, global_step}.
+std::pair<int, int> ParseCheckpointFilename(const string &filename);
+
+string FindLastCheckpoint(const string &checkpoint_dir);
+
+string FindCheckpointAtEpoch(const string &checkpoint_dir, int epoch);
+
+string FindLastCheckpoint();
+
+std::map<int, mv::Examples> SplitExamplesByTags(const mv::Examples &examples,
+                                                    const std::unordered_set<int> &tags);
 
 
 }

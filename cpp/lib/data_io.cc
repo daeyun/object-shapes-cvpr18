@@ -19,7 +19,6 @@
 #include <mutex>
 #include <condition_variable>
 
-#include <concurrentqueue/blockingconcurrentqueue.h>
 #include <iomanip>
 
 #include "common.h"
@@ -38,12 +37,16 @@ namespace Data {
 
 namespace mv = mvshape_dataset;
 namespace fs = boost::filesystem;
-using moodycamel::BlockingConcurrentQueue;
 
 constexpr float kNear = 0.1;
 constexpr float kFar = 40;
 constexpr int kImageNormalizationUpScale = 4;
 constexpr int kNormalizationPadding = 1;
+
+constexpr int kNumReaderThreads = 1;
+constexpr int kQueueSizeMultiplier = 3;
+constexpr int kSlowIOWarningMicroSec = 10000;
+constexpr int kThreadJoinWaitSeconds = 5;
 
 void RenderImages(const vector<const mv::Rendering *> &renderables) {
   auto sorted_renderables = vector<const mv::Rendering *>(renderables.begin(), renderables.end());
@@ -427,36 +430,34 @@ void RenderingReader::RandomIndices(int n, vector<int> *indices) {
 BatchLoader::BatchLoader(const mv::Examples *examples,
                          const vector<int> &field_ids,
                          int batch_size,
-                         bool is_seamless,
-                         bool shuffle)
+                         bool is_seamless)
     : reader_({examples}),
       field_ids_(field_ids),
       batch_size_(batch_size),
       is_seamless_(is_seamless),
-      shuffle_(shuffle) {
-  indices_.reserve(examples->examples_size());
-  for (int i = 0; i < examples->examples_size(); ++i) {
-    indices_.push_back(i);
-  }
-  if (shuffle_) {
-    Random::Shuffle(indices_.begin(), indices_.end());
-  }
+      queue_(nullptr),
+      num_examples_dequeued_(0),
+      num_examples_enqueued_(0) {
+  indices_.resize(static_cast<size_t>(examples->examples_size()));
+  std::iota(std::begin(indices_), std::end(indices_), 0); // Fill with 0, 1, ..., n.
+  Random::Shuffle(indices_.begin(), indices_.end());
+  Ensures(indices_.size() == examples->examples_size());
+
+  StartWorkers();
 }
 
 void BatchLoader::DataReaderRoutine(int thread_id) {
-  LOG(INFO) << "starting DataReaderRoutine()";
+  LOG(INFO) << "Starting DataReaderRoutine()";
   int local_count = 0;
-  while (!should_stop_workers_) {
+
+  while (true) {
     int i;
     {
-      std::lock_guard<std::mutex> lock(index_lock_);
+      std::lock_guard<std::mutex> lock(lock_);
       if (current_read_index_ >= indices_.size()) {
         if (is_seamless_) {
-          if (shuffle_) {
-            Random::Shuffle(indices_.begin(), indices_.end());
-          }
+          Random::Shuffle(indices_.begin(), indices_.end());
         } else {
-          cv_.notify_one();
           break;
         }
         current_read_index_ = 0;
@@ -475,56 +476,55 @@ void BatchLoader::DataReaderRoutine(int thread_id) {
     }
     single_example.size = 1;
     single_example.example_indices.emplace_back(row_index);
-    queue_.enqueue(single_example);
-
-    local_count++;
-    cv_.notify_one();
-
-    {
-      std::unique_lock<std::mutex> lock(queue_lock_);
-      cv_.wait(lock, [&] {
-        return queue_.size_approx() < batch_size_ * kQueueCapacityMultiplier
-            || should_stop_workers_;
-      });
+    if (queue_->Enqueue(single_example)) {
+      local_count++;
+      num_examples_enqueued_++;
+    } else {
+      break;
     }
   }
+
+  if (num_examples_enqueued_.load() >= size()) {
+    queue_->Close();
+    if (!is_seamless_) {
+      Ensures(num_examples_enqueued_.load() == size());
+    }
+  }
+
   LOG(INFO) << "End of DataReaderRoutine() after inserting " << local_count << " examples to the queue.";
 }
 
 void BatchLoader::BatchRoutine(int thread_id) {
-  LOG(INFO) << "starting BatchRoutine()";
-  while (!should_stop_workers_) {
-    {
-      std::unique_lock<std::mutex> lock(batch_lock_);
-      batch_cv_.wait(lock, [&] { return batch_data_ == nullptr || should_stop_workers_; });
-      if (should_stop_workers_) {
-        break;
-      }
-    }
+  LOG(INFO) << "Starting BatchRoutine()";
 
-    int next_size = batch_size_;
+  std::vector<BatchData> data(static_cast<size_t>(batch_size_));
+  while (true) {
+    size_t num_dequeued = queue_->Dequeue(std::begin(data), static_cast<size_t>(batch_size_));
 
-    if (!is_seamless_ && indices_.size() - num_examples_fetched_ < batch_size_) {
-      next_size = static_cast<int>(indices_.size()) - num_examples_fetched_;
-    }
-    if (next_size == 0) {
-      end_of_queue_ = true;
+    if (num_dequeued == 0) {
+      // Queue was closed.
       break;
     }
-    Ensures(next_size > 0);
 
-    {
-      std::unique_lock<std::mutex> lock(queue_lock_);
-      cv_.wait(lock, [&] { return queue_.size_approx() >= next_size || should_stop_workers_; });
-      if (should_stop_workers_) {
-        break;
-      }
+    // Truncates if this is the last batch and there are fewer remaining items than the batch size.
+    if (num_dequeued < batch_size_) {
+      data.resize(num_dequeued);
+    } else {
+      Ensures(num_dequeued == batch_size_);
+    }
+    Ensures(num_dequeued == data.size());
+
+    auto batch_data = std::make_unique<BatchData>();
+
+    vector<size_t> field_sizes;
+    for (int q = 0; q < field_ids_.size(); ++q) {
+      int field_id = field_ids_[q];
+      // Assume field sizes are the same in all examples.
+      auto field_size = data[0].file_fields.at(field_id).size();
+      batch_data->file_fields[field_id].reserve(field_size * num_dequeued);
+      field_sizes.push_back(field_size);
     }
 
-    std::vector<BatchData> data(next_size);
-    queue_.wait_dequeue_bulk(data.begin(), next_size);
-    auto batch_data = std::make_unique<BatchData>();
-    vector<vector<string>> field_data(field_ids_.size(), vector<string>(next_size));
     for (int j = 0; j < data.size(); ++j) {
       const auto &item = data[j];
       batch_data->size += item.size;
@@ -534,78 +534,148 @@ void BatchLoader::BatchRoutine(int thread_id) {
           item.example_indices.end());
       for (int q = 0; q < field_ids_.size(); ++q) {
         int field_id = field_ids_[q];
-        field_data[q][j] = item.file_fields.at(field_id);
+        const string &s = item.file_fields.at(field_id);
+        Expects(s.size() == field_sizes[q]);
+        batch_data->file_fields[field_id].append(s);
       }
     }
 
-    for (int q = 0; q < field_ids_.size(); ++q) {
-      int field_id = field_ids_[q];
-      batch_data->file_fields[field_id] = boost::algorithm::join(field_data[q], "");
-    }
-
-    Ensures(batch_data->size == next_size);
-    cv_.notify_all();
+    num_examples_dequeued_ += data.size();
 
     {
       std::unique_lock<std::mutex> lock(batch_lock_);
+      batch_cv_.wait(lock, [&] { return batch_data_ == nullptr; });
+
+      Expects(batch_data_ == nullptr);
       batch_data_ = std::move(batch_data);
-      num_examples_fetched_ += next_size;
-      batch_cv_.notify_one();
     }
+
+    batch_cv_.notify_one();
   }
-  LOG(INFO) << "End of BatchRoutine() after reading " << num_examples_fetched_ << " examples.";
+
+  LOG(INFO) << "End of BatchRoutine() after reading " << num_examples_dequeued_.load() << " examples.";
 }
 
 void BatchLoader::StartWorkers() {
-  if (batch_thread_.joinable()) {
-    LOG(INFO) << "Threads are already running.";
+  std::lock_guard<std::mutex> lock(lock_);
+
+  if (num_active_threads_ > 0 || queue_ != nullptr) {
+    LOG(ERROR) << "Threads are already running: " << num_active_threads_;
     return;
   }
-  LOG(INFO) << size() << " examples";
-  end_of_queue_ = false;
-  num_examples_fetched_ = 0;
 
-  // Reset queues.
-  queue_ = BlockingConcurrentQueue<BatchData>(batch_size_ * kQueueCapacityMultiplier);
-  should_stop_workers_ = false;
+  queue_ = make_unique<mvshape::concurrency::BatchQueue<BatchData>>(batch_size_ * kQueueSizeMultiplier);
 
-  std::unique_lock<std::mutex> lock(queue_lock_);
-  batch_thread_ = std::thread([&] { BatchRoutine(0); });
+  num_active_threads_ = kNumReaderThreads + 1;
+
+  batch_thread_ = std::thread([&] {
+    BatchRoutine(0);
+    {
+      std::lock_guard<std::mutex> thread_lock(lock_);
+      --num_active_threads_;
+    }
+    cv_.notify_all();
+  });
+
   for (int i = 0; i < kNumReaderThreads; ++i) {
-    reader_threads_.emplace_back([&] { DataReaderRoutine(i); });
+    reader_threads_.emplace_back([&] {
+      DataReaderRoutine(i);
+      {
+        std::lock_guard<std::mutex> thread_lock(lock_);
+        --num_active_threads_;
+      }
+      cv_.notify_all();
+    });
   }
 
-  LOG(INFO) << "Started workers.";
+  std::stringstream stream;
+  stream << "Launched " << kNumReaderThreads + 1 << " threads fetching " << size() << " examples";
+  if (is_seamless_) {
+    stream << " indefinitely.";
+  } else {
+    stream << " once.";
+  }
+  LOG(INFO) << stream.str();
 }
 
 void BatchLoader::StopWorkers() {
-  LOG(INFO) << "Stopping workers.";
-  should_stop_workers_ = true;
-  cv_.notify_all();
-  batch_cv_.notify_all();
-  for (int i = 0; i < kNumReaderThreads; ++i) {
-    reader_threads_[i].join();
-    LOG(INFO) << "join() reader thread " << i;
-  }
-  reader_threads_.clear();
-  batch_thread_.join();
-  LOG(INFO) << "join() batch thread";
+  BatchLoader::StopWorkersAsync();
+
+  std::unique_lock<std::mutex> lock(lock_);
+  cv_.wait(lock, [&]() -> bool {
+    return num_active_threads_ <= 0 && (queue_ == nullptr);
+  });
+
+  Ensures(num_active_threads_ == 0 && queue_ == nullptr);
+}
+
+void BatchLoader::StopWorkersAsync() {
+  auto start_time = mvshape::MicroSecondsSinceEpoch();
+
+  queue_->Close();
+
+  auto task = std::thread([&] {
+
+    while (true) {
+      bool no_timeout;
+      {
+        std::unique_lock<std::mutex> lock(lock_);
+        no_timeout = cv_.wait_for(lock, std::chrono::seconds(kThreadJoinWaitSeconds), [&] {
+          return num_active_threads_ <= 0;
+        });
+      }
+
+      if (no_timeout) {
+        auto join_start = mvshape::MicroSecondsSinceEpoch();
+        for (int j = 0; j < reader_threads_.size(); ++j) {
+          reader_threads_[j].join();
+        }
+        batch_thread_.join();
+        // Sanity check.
+        Ensures(mvshape::MicroSecondsSinceEpoch() - join_start < 1e6);
+
+        auto end_time = mvshape::MicroSecondsSinceEpoch();
+        LOG(INFO) << "All threads stopped. Time elapsed: " << (end_time - start_time) / 1000 << " milliseconds";
+
+        reader_threads_.clear();
+        {
+          std::lock_guard<std::mutex> lock(lock_);
+          queue_ = nullptr;
+        }
+        cv_.notify_all();
+        break;
+      } else {
+        LOG(WARNING) << num_active_threads_ << " threads are still running.";
+      }
+    }
+  });
+  task.detach();
 }
 
 std::unique_ptr<BatchData> BatchLoader::Next() {
   auto start = MicroSecondsSinceEpoch();
   std::unique_ptr<BatchData> ret;
-  if (end_of_queue_) {
+
+  if (!is_seamless_ && num_examples_returned_ >= size()) {
     LOG(INFO) << "End of queue. Returned " << num_examples_returned_ << " examples.";
     ret = nullptr;
+  } else if (queue_ == nullptr) {
+    LOG(INFO) << "Queue is inactive. Number of examples returned: " << num_examples_returned_;
+    ret = nullptr;
   } else {
-    std::unique_lock<std::mutex> lock(batch_lock_);
-    batch_cv_.wait(lock, [&] { return batch_data_ != nullptr; });
-    ret = std::move(batch_data_);
-    batch_data_ = nullptr;
-    batch_cv_.notify_one();
+    {
+      std::unique_lock<std::mutex> lock(batch_lock_);
+      batch_cv_.wait(lock, [&] { return batch_data_ != nullptr; });
+
+      Expects(batch_data_ != nullptr);
+      ret = std::move(batch_data_);
+      Ensures(batch_data_ == nullptr);
+    }
+
     num_examples_returned_ += ret->size;
+    batch_cv_.notify_one();
   }
+
   auto elapsed = MicroSecondsSinceEpoch() - start;
   if (elapsed > kSlowIOWarningMicroSec) {
     LOG(WARNING) << "IO bottleneck detected. Waiting time: "

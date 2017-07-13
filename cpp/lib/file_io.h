@@ -93,5 +93,7 @@ string FullOutPath(const string &path);
 
 bool PrepareDir(const string &filename);
 
+vector<string> RegularFilesInDirectory(const string &dir);
+
 }  // namespace FileIO
 }  // namespace mvshape

@@ -229,3 +229,21 @@ TEST(Tensorflow, UpdateEpochCount) {
 
   model.session->Close();
 }
+
+TEST(CheckpointIO, ParseFilename) {
+  auto epoch_step = mvshape::tf_utils::ParseCheckpointFilename("/111/222/0000_00001044.index");
+  EXPECT_EQ(0, epoch_step.first);
+  EXPECT_EQ(1044, epoch_step.second);
+
+  epoch_step = mvshape::tf_utils::ParseCheckpointFilename("/111/222/0003_00001044.index");
+  EXPECT_EQ(3, epoch_step.first);
+  EXPECT_EQ(1044, epoch_step.second);
+
+  epoch_step = mvshape::tf_utils::ParseCheckpointFilename("/111/222/0003_00001044.data-0000-of-00001");
+  EXPECT_EQ(3, epoch_step.first);
+  EXPECT_EQ(1044, epoch_step.second);
+
+  epoch_step = mvshape::tf_utils::ParseCheckpointFilename("/111/222/0003_00001044");
+  EXPECT_EQ(3, epoch_step.first);
+  EXPECT_EQ(1044, epoch_step.second);
+}

@@ -129,30 +129,20 @@ TEST_F(ReadExamplesTest, Queues) {
   mvshape::Data::BatchLoader loader(&examples, {
       mv::Example::kSingleDepthFieldNumber,
       mv::Example::kMultiviewDepthFieldNumber,
-  }, batch_size, true, true);
-
-  loader.StartWorkers();
+  }, batch_size, true);
 
   for (int i = 0; i < 10; ++i) {
     auto data = loader.Next();
     EXPECT_EQ(2, data->file_fields.size());
   }
-
-  loader.StopWorkers();
-
-  loader.StartWorkers();
-
-  for (int i = 0; i < 5; ++i) {
-    auto data = loader.Next();
-    EXPECT_EQ(2, data->file_fields.size());
-  }
+  EXPECT_EQ(100 * 10, loader.num_examples_returned());
 
   loader.StopWorkers();
 
   FLAGS_data_dir = datadir;
 }
 
-TEST_F(ReadExamplesTest, MatchInputOutput) {
+TEST_F(ReadExamplesTest, MatchInputOutputSeamless) {
   mvshape_dataset::Examples examples;
   mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
   mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
@@ -169,9 +159,7 @@ TEST_F(ReadExamplesTest, MatchInputOutput) {
   mvshape::Data::BatchLoader loader(&examples, {
       mv::Example::kSingleDepthFieldNumber,
       mv::Example::kMultiviewDepthFieldNumber,
-  }, batch_size, true, false);
-
-  loader.StartWorkers();
+  }, batch_size, true);
 
   std::hash<std::string> str_hash;
   std::map<size_t, size_t> mapping;
@@ -191,6 +179,49 @@ TEST_F(ReadExamplesTest, MatchInputOutput) {
   }
 
   loader.StopWorkers();
+
+  FLAGS_data_dir = datadir;
+}
+
+TEST_F(ReadExamplesTest, DistinctExampleIds) {
+  mvshape_dataset::Examples examples;
+  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &examples);
+
+  string datadir = FLAGS_data_dir;
+  FLAGS_data_dir = FLAGS_out_dir;
+
+  const int repeats = 10;
+  for (int i = 0; i < repeats; ++i) {
+    EXPECT_EQ(14, examples.examples_size());
+
+    int batch_size = 3;
+    LOG(INFO) << "batch_size " << batch_size;
+
+    mvshape::Data::BatchLoader loader(&examples, {
+        mv::Example::kSingleDepthFieldNumber,
+        mv::Example::kMultiviewDepthFieldNumber,
+    }, batch_size, false);
+
+    std::set<int> unique_indices;
+    int count = 0;
+
+    while (true) {
+      auto data = loader.Next();
+      if (data == nullptr) {
+        break;
+      }
+
+      unique_indices.insert(data->example_indices.begin(), data->example_indices.end());
+      count += data->example_indices.size();
+    }
+
+    EXPECT_EQ(14, count);
+    EXPECT_EQ(14, unique_indices.size());
+
+    loader.StopWorkers();
+  }
 
   FLAGS_data_dir = datadir;
 }

@@ -7,20 +7,20 @@
 #include <unordered_map>
 #include <thread>
 #include <atomic>
+#include <future>
 #include <mutex>
 #include <condition_variable>
 #include <queue>
 
-#include <concurrentqueue/blockingconcurrentqueue.h>
 #include "common.h"
 #include "camera.h"
+#include "batch_queue.h"
 #include "proto/dataset.pb.h"
 
 namespace mvshape {
 namespace Data {
 
 namespace mv = mvshape_dataset;
-using moodycamel::BlockingConcurrentQueue;
 
 void GenerateDataset();
 
@@ -73,10 +73,9 @@ class BatchLoader {
   BatchLoader(const mv::Examples *examples,
               const vector<int> &field_ids,
               int batch_size,
-              bool is_seamless,
-              bool shuffle);
+              bool is_seamless);
 
-  void StartWorkers();
+  void StopWorkersAsync();
   void StopWorkers();
 
   std::unique_ptr<BatchData> Next();
@@ -95,35 +94,31 @@ class BatchLoader {
 
   int num_examples_returned() const;
 
-  static constexpr int kNumReaderThreads = 4;
-  static constexpr int kQueueCapacityMultiplier = 3;
-  static constexpr int kSlowIOWarningMicroSec = 10000;
-
  private:
+  void StartWorkers();
 
   void DataReaderRoutine(int thread_id);
   void BatchRoutine(int thread_id);
 
   RenderingReader reader_;
   const vector<int> field_ids_;
-  int batch_size_;
+  const int batch_size_;
   bool is_seamless_;
-  bool shuffle_;
-  BlockingConcurrentQueue<BatchData> queue_;
+  unique_ptr<mvshape::concurrency::BatchQueue<BatchData>> queue_;
   vector<int> indices_;
   int current_read_index_ = 0;
-  int num_examples_fetched_ = 0;
+  std::atomic<int> num_examples_dequeued_;
+  std::atomic<int> num_examples_enqueued_;
   int num_examples_returned_ = 0;
-  std::mutex index_lock_;
-  std::mutex queue_lock_;
+  int num_active_threads_;
+
+  std::mutex lock_;
   std::mutex batch_lock_;
-  volatile bool should_stop_workers_ = false;
   vector<std::thread> reader_threads_;
   std::thread batch_thread_;
   std::condition_variable cv_;
   std::condition_variable batch_cv_;
   std::unique_ptr<BatchData> batch_data_ = nullptr;
-  bool end_of_queue_ = false;
 };
 
 }
