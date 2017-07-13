@@ -166,6 +166,7 @@ TEST_F(ReadExamplesTest, MatchInputOutputSeamless) {
 
   for (int i = 0; i < 2000; ++i) {
     auto data = loader.Next();
+    EXPECT_EQ(1, data->size);
     for (int j = 0; j < data->file_fields.size(); ++j) {
       data->file_fields[mv::Example::kSingleDepthFieldNumber];
       size_t hash1 = str_hash(data->file_fields[mv::Example::kSingleDepthFieldNumber]);
@@ -192,7 +193,7 @@ TEST_F(ReadExamplesTest, DistinctExampleIds) {
   string datadir = FLAGS_data_dir;
   FLAGS_data_dir = FLAGS_out_dir;
 
-  const int repeats = 10;
+  const int repeats = 20;
   for (int i = 0; i < repeats; ++i) {
     EXPECT_EQ(14, examples.examples_size());
 

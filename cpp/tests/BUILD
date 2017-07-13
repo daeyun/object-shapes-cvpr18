@@ -130,3 +130,14 @@ cc_test(
         "//third_party:tensorflow",
     ],
 )
+
+cc_test(
+    name = "benchmark_test",
+    size = "small",
+    srcs = ["benchmark_test.cc"],
+    copts = ["-Icpp/lib"],
+    deps = [
+        ":test_main",
+        "//cpp/lib:benchmark",
+    ],
+)

@@ -97,9 +97,7 @@ int main(int argc, char *argv[]) {
   mvshape::Data::BatchLoader loader(&train_examples, {
       mv::Example::kSingleDepthFieldNumber,
       mv::Example::kMultiviewDepthFieldNumber,
-  }, batch_size, true, true);
-
-  loader.StartWorkers();
+  }, batch_size, true);
 
   mvshape::Timer timer("train");
 
@@ -142,6 +140,7 @@ int main(int argc, char *argv[]) {
                 << loader.num_examples_returned() << " examples total.";
     }
 
+    // TODO
     if (tf_utils::DidChange(loader.epoch())) {
       LOG(INFO) << "Starting evaluation at " << loader.epoch();
 
@@ -151,9 +150,7 @@ int main(int argc, char *argv[]) {
         mvshape::Data::BatchLoader eval_loader(&test_examples_by_tag[tag], {
             mv::Example::kSingleDepthFieldNumber,
             mv::Example::kMultiviewDepthFieldNumber,
-        }, batch_size, false, false);
-
-        eval_loader.StartWorkers();
+        }, batch_size, false);
 
         int count = 0;
         std::map<string, float> mean;
@@ -196,7 +193,7 @@ int main(int argc, char *argv[]) {
 
         LOG(INFO) << stream.str();
 
-        eval_loader.StopWorkersAsync();
+        eval_loader.StopWorkers();
       }
 
       tf_utils::SaveCheckpoint(model.session.get());

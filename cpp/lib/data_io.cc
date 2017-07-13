@@ -560,7 +560,7 @@ void BatchLoader::StartWorkers() {
   std::lock_guard<std::mutex> lock(lock_);
 
   if (num_active_threads_ > 0 || queue_ != nullptr) {
-    LOG(ERROR) << "Threads are already running: " << num_active_threads_;
+    LOG(FATAL) << "Threads are already running: " << num_active_threads_;
     return;
   }
 
@@ -599,22 +599,32 @@ void BatchLoader::StartWorkers() {
 }
 
 void BatchLoader::StopWorkers() {
-  BatchLoader::StopWorkersAsync();
+  queue_->Close();
+  auto join_start = mvshape::MicroSecondsSinceEpoch();
+  for (int j = 0; j < reader_threads_.size(); ++j) {
+    reader_threads_[j].join();
+  }
+  batch_thread_.join();
 
-  std::unique_lock<std::mutex> lock(lock_);
-  cv_.wait(lock, [&]() -> bool {
-    return num_active_threads_ <= 0 && (queue_ == nullptr);
-  });
+  reader_threads_.clear();
 
-  Ensures(num_active_threads_ == 0 && queue_ == nullptr);
+  {
+    std::lock_guard<std::mutex> lock(lock_);
+    queue_ = nullptr;
+  }
+  cv_.notify_all();
+
+  LOG(INFO) << "Joined all threads. " << "Time elapsed: "
+            << (mvshape::MicroSecondsSinceEpoch() - join_start) << " microseconds.";
 }
 
 void BatchLoader::StopWorkersAsync() {
+  DLOG(INFO) << "StopWorkersAsync()";
   auto start_time = mvshape::MicroSecondsSinceEpoch();
 
   queue_->Close();
 
-  auto task = std::thread([&] {
+  auto task = std::thread([=] {
 
     while (true) {
       bool no_timeout;
@@ -635,7 +645,7 @@ void BatchLoader::StopWorkersAsync() {
         Ensures(mvshape::MicroSecondsSinceEpoch() - join_start < 1e6);
 
         auto end_time = mvshape::MicroSecondsSinceEpoch();
-        LOG(INFO) << "All threads stopped. Time elapsed: " << (end_time - start_time) / 1000 << " milliseconds";
+        LOG(INFO) << "All threads stopped. Time elapsed: " << end_time - start_time << " microseconds";
 
         reader_threads_.clear();
         {
@@ -647,6 +657,7 @@ void BatchLoader::StopWorkersAsync() {
       } else {
         LOG(WARNING) << num_active_threads_ << " threads are still running.";
       }
+
     }
   });
   task.detach();
