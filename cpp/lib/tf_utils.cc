@@ -31,22 +31,7 @@ int LoadSavedModel(const std::unordered_set<std::string> &tags, tf::SavedModelBu
   auto session_options = tf::SessionOptions();
   auto run_options = tf::RunOptions();
 
-  if (FLAGS_is_test_mode) {
-    session_options.config.mutable_gpu_options()->set_per_process_gpu_memory_fraction(0.00);
-    session_options.config.mutable_gpu_options()->set_allow_growth(false);
-    session_options.config.mutable_gpu_options()->set_visible_device_list("");  // same as default.
-    session_options.config.mutable_device_count()->clear();
-    session_options.config.mutable_device_count()->insert({"GPU", 0});
-    session_options.config.set_allow_soft_placement(true);
-
-    run_options.set_timeout_in_ms(1000);
-//    run_options.set_trace_level(tf::RunOptions_TraceLevel_FULL_TRACE);
-
-    LOG(INFO) << "Initializing session using test mode config.";
-  } else {
-    session_options.config.mutable_gpu_options()->set_allow_growth(true);
-  }
-
+  session_options.config.mutable_gpu_options()->set_allow_growth(true);
 
   if (FLAGS_tf_model.empty()) {
     LOG(ERROR) << "--tf_model flag missing.";
