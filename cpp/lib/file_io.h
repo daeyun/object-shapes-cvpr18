@@ -85,7 +85,7 @@ bool Exists(const std::string &filename);
 
 string SystemTempDir();
 
-string NewTempDir(const string &name);
+string NamedEmptyTempDir(const string &name);
 
 string FullDataPath(const string &path);
 
@@ -94,6 +94,10 @@ string FullOutPath(const string &path);
 bool PrepareDir(const string &filename);
 
 vector<string> RegularFilesInDirectory(const string &dir);
+
+void RemoveDirIfExists(const string &path);
+
+string JoinPath(const string &a, const string &b);
 
 }  // namespace FileIO
 }  // namespace mvshape

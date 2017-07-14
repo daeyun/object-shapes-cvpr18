@@ -168,14 +168,11 @@ TEST(Tensorflow, Integration) {
 
   EXPECT_EQ(global_step_1, global_step_2);
 
-
-  // When train_op runs with is_training=false, EMA won't be updated, but it should still train.
-
-  vector<tf::Tensor> outputs;
-  is_training.scalar<bool>()() = false;
-
   global_step = mvshape::tf_utils::ScalarOutput<int>(model.session.get(), "global_step");
   EXPECT_EQ(global_step, 0);
+
+  vector<tf::Tensor> outputs;
+  is_training.scalar<bool>()() = true;
 
   mvshape::tf_utils::SetTensorData<float>(b1, &input_tensor);
   TF_CHECK_OK(model.session->Run(feed, {"loss"}, {"train_op"}, &outputs));
@@ -184,11 +181,12 @@ TEST(Tensorflow, Integration) {
   TF_CHECK_OK(model.session->Run(feed, {"loss"}, {"train_op"}, &outputs));
   loss1_2 = outputs[0].scalar<float>()();
 
+  EXPECT_TRUE(std::isfinite(loss1));
+  EXPECT_TRUE(std::isfinite(loss1_2));
   EXPECT_LT(1e-6, std::abs(loss1 - loss1_2));
 
   global_step = mvshape::tf_utils::ScalarOutput<int>(model.session.get(), "global_step");
   EXPECT_EQ(global_step, 2);
-
 
   // Save
 

@@ -126,6 +126,17 @@ void SerializeTensor(const std::string &filename, const void *data, const std::v
   Ensures(Exists(absolute_path));
 }
 
+string JoinPath(const string &a, const string &b) {
+  return (fs::path(a) / fs::path(b)).string();
+}
+
+void RemoveDirIfExists(const string &path) {
+  if (fs::is_directory(path)) {
+    DLOG(INFO) << "rm -rf " << fs::absolute(path);
+    fs::remove_all(path);
+  }
+}
+
 vector<string> RegularFilesInDirectory(const string &dir) {
   fs::path path(dir);
   vector<string> paths;
@@ -318,14 +329,12 @@ bool PrepareDir(const string &filename) {
   return false;
 }
 
-string NewTempDir(const string &name) {
+string NamedEmptyTempDir(const string &name) {
   string path = (fs::path(SystemTempDir()) / name).string();
 
   Expects(!fs::is_regular_file(path));
 
-  if (fs::is_directory(path)) {
-    fs::remove_all(path);
-  }
+  RemoveDirIfExists(path);
   fs::create_directories(path);
 
   DLOG(INFO) << "Using temp directory " << path;
@@ -355,7 +364,6 @@ string FullOutPath(const string &path) {
   }
   return (data_dir / fs::path(p)).string();
 }
-
 
 }  // namespace FileIO
 }  // namespace mvshape

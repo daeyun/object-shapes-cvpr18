@@ -600,10 +600,15 @@ void BatchLoader::StartWorkers() {
 
 void BatchLoader::StopWorkers() {
   queue_->Close();
+  cv_.notify_all();
+  batch_cv_.notify_all();
+
   auto join_start = mvshape::MicroSecondsSinceEpoch();
   for (int j = 0; j < reader_threads_.size(); ++j) {
+    DLOG(INFO) << "Joining reader thread " << j;
     reader_threads_[j].join();
   }
+  DLOG(INFO) << "Joining batch thread";
   batch_thread_.join();
 
   reader_threads_.clear();
@@ -613,6 +618,7 @@ void BatchLoader::StopWorkers() {
     queue_ = nullptr;
   }
   cv_.notify_all();
+  batch_cv_.notify_all();
 
   LOG(INFO) << "Joined all threads. " << "Time elapsed: "
             << (mvshape::MicroSecondsSinceEpoch() - join_start) << " microseconds.";

@@ -13,7 +13,7 @@
 namespace mvshape {
 namespace concurrency {
 
-static constexpr int64_t kTimeoutMicroSec = 5000;
+static constexpr int64_t kTimeoutMicroSec = 1500;
 
 template<typename T>
 class BatchQueue {

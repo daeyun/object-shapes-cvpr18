@@ -1,12 +1,17 @@
 cc_library(
     name = "test_main",
-    srcs = ["test_main.cc"],
+    srcs = [
+        "test_main.cc",
+        "test_utils.cc",
+    ],
+    hdrs = ["test_utils.h"],
     copts = ["-Icpp/lib"],
     data = ["//resources"],
     deps = [
         "//cpp/lib:common",
         "//cpp/lib:file_io",
         "//cpp/lib:flags",
+        "//cpp/lib:random_utils",
         "//cpp/lib:resources",
         "//external:cpp_gsl",
         "//external:gtest",
@@ -42,8 +47,6 @@ cc_test(
     size = "small",
     srcs = ["dataset_io_test.cc"],
     copts = ["-Icpp/lib"],
-    # Tests should run one at a time.
-    tags = ["exclusive"],
     deps = [
         ":test_main",
         "//cpp/lib:data_io",

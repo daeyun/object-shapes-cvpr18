@@ -14,28 +14,26 @@
 #include "database.h"
 #include "resources.h"
 #include "data_io.h"
+#include "test_utils.h"
 
 using namespace mvshape;
 namespace mv = mvshape_dataset;
 
-TEST(GenerateDataset, Subset) {
+TEST_F(OutputTest, GenerateDatasetSubset) {
   Data::GenerateDataset();
 }
 
-TEST(GenerateMetadata, Subset) {
+TEST_F(OutputTest, GenerateMetadataSubset) {
   int count = mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
                                           "splits/shrec12_examples_vpo/");
   EXPECT_EQ(20, count);
 }
 
 TEST(LoadMetadata, Subset) {
-  mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
-                              "splits/shrec12_examples_vpo/");
-
   mvshape_dataset::Examples examples;
-  int train = mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &examples);
+  int train = mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/train.bin"), &examples);
   EXPECT_EQ(2, train);
-  int test = mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  int test = mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
   EXPECT_EQ(6, test);
 
   EXPECT_TRUE(!examples.examples(0).single_depth().filename().empty());
@@ -49,13 +47,10 @@ TEST(LoadMetadata, Subset) {
 }
 
 TEST(LoadMetadata, MatchInputOutput) {
-  mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
-                              "splits/shrec12_examples_vpo/");
-
   mvshape_dataset::Examples examples;
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/train.bin"), &examples);
 
   for (int i = 0; i < examples.examples_size(); ++i) {
     EXPECT_EQ(examples.examples(i).single_depth().object_id(), examples.examples(i).multiview_depth().object_id());
@@ -63,22 +58,11 @@ TEST(LoadMetadata, MatchInputOutput) {
   }
 }
 
-class ReadExamplesTest : public ::testing::Test {
- protected:
-  virtual void SetUp() {
-    Data::GenerateDataset();
-    mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
-                                "splits/shrec12_examples_vpo/");
-  }
-};
-
-TEST_F(ReadExamplesTest, ValidSize) {
+TEST(BatchLoader, ValidSize) {
   mvshape_dataset::Examples examples;
-  int test = mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  int test = mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
   EXPECT_EQ(6, test);
 
-  string datadir = FLAGS_data_dir;
-  FLAGS_data_dir = FLAGS_out_dir;
   string data;
   const auto &depth_rendering = examples.examples(0).single_depth();
   Data::LoadRenderingContent(depth_rendering, &data);
@@ -93,16 +77,12 @@ TEST_F(ReadExamplesTest, ValidSize) {
   // 65536 * v
   expected = 4 * normal_rendering.resolution() * normal_rendering.resolution() * normal_rendering.set_size();
   EXPECT_EQ(expected, data.size());
-
-  FLAGS_data_dir = datadir;
 }
 
-TEST_F(ReadExamplesTest, ExampleReader) {
+TEST(BatchLoader, ExampleReader) {
   mvshape_dataset::Examples examples;
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
   auto reader = Data::RenderingReader(&examples);
-  string datadir = FLAGS_data_dir;
-  FLAGS_data_dir = FLAGS_out_dir;
 
   std::unordered_map<int, vector<unique_ptr<string>>> data;
   reader.LoadBatch({
@@ -114,17 +94,13 @@ TEST_F(ReadExamplesTest, ExampleReader) {
   EXPECT_EQ(3, data[mv::Example::kSingleDepthFieldNumber].size());
   EXPECT_EQ(65536, data[mv::Example::kSingleDepthFieldNumber][0]->size());
   EXPECT_EQ(6 * 65536, data[mv::Example::kMultiviewDepthFieldNumber][0]->size());
-  FLAGS_data_dir = datadir;
 }
 
-TEST_F(ReadExamplesTest, Queues) {
+TEST(BatchLoader, Queues) {
   mvshape_dataset::Examples examples;
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
 
   int batch_size = 100;
-
-  string datadir = FLAGS_data_dir;
-  FLAGS_data_dir = FLAGS_out_dir;
 
   mvshape::Data::BatchLoader loader(&examples, {
       mv::Example::kSingleDepthFieldNumber,
@@ -138,23 +114,18 @@ TEST_F(ReadExamplesTest, Queues) {
   EXPECT_EQ(100 * 10, loader.num_examples_returned());
 
   loader.StopWorkers();
-
-  FLAGS_data_dir = datadir;
 }
 
-TEST_F(ReadExamplesTest, MatchInputOutputSeamless) {
+TEST(BatchLoader, MatchInputOutputSeamless) {
   mvshape_dataset::Examples examples;
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/train.bin"), &examples);
 
   EXPECT_EQ(14, examples.examples_size());
 
   int batch_size = 1;
   LOG(INFO) << "batch_size " << batch_size;
-
-  string datadir = FLAGS_data_dir;
-  FLAGS_data_dir = FLAGS_out_dir;
 
   mvshape::Data::BatchLoader loader(&examples, {
       mv::Example::kSingleDepthFieldNumber,
@@ -180,18 +151,13 @@ TEST_F(ReadExamplesTest, MatchInputOutputSeamless) {
   }
 
   loader.StopWorkers();
-
-  FLAGS_data_dir = datadir;
 }
 
-TEST_F(ReadExamplesTest, DistinctExampleIds) {
+TEST(BatchLoader, DistinctExampleIds) {
   mvshape_dataset::Examples examples;
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &examples);
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
-  mvshape::Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &examples);
-
-  string datadir = FLAGS_data_dir;
-  FLAGS_data_dir = FLAGS_out_dir;
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/test.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/validation.bin"), &examples);
+  mvshape::Data::LoadExamples(FileIO::FullDataPath("splits/shrec12_examples_vpo/train.bin"), &examples);
 
   const int repeats = 20;
   for (int i = 0; i < repeats; ++i) {
@@ -223,6 +189,4 @@ TEST_F(ReadExamplesTest, DistinctExampleIds) {
 
     loader.StopWorkers();
   }
-
-  FLAGS_data_dir = datadir;
 }
