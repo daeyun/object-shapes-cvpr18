@@ -53,6 +53,7 @@ std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_e
   const vector<string> float_scalar_names{"loss", "iou"};
 
   for (int tag: {mv::NOVELVIEW, mv::NOVELMODEL, mv::NOVELCLASS}) {
+
     mvshape::Data::BatchLoader eval_loader(&eval_examples_by_tag[tag], {
         mv::Example::kSingleDepthFieldNumber,
         mv::Example::kMultiviewDepthFieldNumber,

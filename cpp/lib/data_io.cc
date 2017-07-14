@@ -545,13 +545,13 @@ void BatchLoader::BatchRoutine(int thread_id) {
     {
       while (true) {
         std::unique_lock<std::mutex> lock(batch_lock_);
-        bool ok = batch_cv_.wait_for(lock, std::chrono::milliseconds(100), [&] { return batch_data_ == nullptr; });
+        bool ok = batch_cv_.wait_for(lock, std::chrono::milliseconds(150), [&] { return batch_data_ == nullptr; });
         if (ok) {
           Expects(batch_data_ == nullptr);
           batch_data_ = std::move(batch_data);
           break;
         } else { // timeout.
-          if (stop_requested_ or queue_->is_closed_and_empty()) {
+          if (stop_requested_ or num_examples_returned_ >= size()) {
             goto BatchRoutine_END;
           }
         }
@@ -697,13 +697,21 @@ std::unique_ptr<BatchData> BatchLoader::Next() {
     LOG(INFO) << "Queue is inactive. Number of examples returned: " << num_examples_returned_;
     ret = nullptr;
   } else {
-    {
+    while (true) {
       std::unique_lock<std::mutex> lock(batch_lock_);
-      batch_cv_.wait(lock, [&] { return batch_data_ != nullptr; });
+      bool ok = batch_cv_.wait_for(lock, std::chrono::milliseconds(150), [&] { return batch_data_ != nullptr; });
 
-      Expects(batch_data_ != nullptr);
-      ret = std::move(batch_data_);
-      Ensures(batch_data_ == nullptr);
+      if (ok) {
+        Expects(batch_data_ != nullptr);
+        ret = std::move(batch_data_);
+        Ensures(batch_data_ == nullptr);
+        break;
+      } else { // timeout.
+        if (!is_seamless_ && num_examples_returned_ >= size()) {
+          return nullptr;
+        }
+        // pass.
+      }
     }
 
     num_examples_returned_ += ret->size;
