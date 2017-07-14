@@ -113,6 +113,7 @@ class BatchLoader {
   std::atomic<int> num_examples_enqueued_;
   int num_examples_returned_ = 0;
   int num_active_threads_ = 0;
+  bool stop_requested_ = false;
 
   std::mutex lock_;
   std::mutex batch_lock_;

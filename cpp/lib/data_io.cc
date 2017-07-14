@@ -543,15 +543,25 @@ void BatchLoader::BatchRoutine(int thread_id) {
     num_examples_dequeued_ += data.size();
 
     {
-      std::unique_lock<std::mutex> lock(batch_lock_);
-      batch_cv_.wait(lock, [&] { return batch_data_ == nullptr; });
-
-      Expects(batch_data_ == nullptr);
-      batch_data_ = std::move(batch_data);
+      while (true) {
+        std::unique_lock<std::mutex> lock(batch_lock_);
+        bool ok = batch_cv_.wait_for(lock, std::chrono::milliseconds(100), [&] { return batch_data_ == nullptr; });
+        if (ok) {
+          Expects(batch_data_ == nullptr);
+          batch_data_ = std::move(batch_data);
+          break;
+        } else { // timeout.
+          if (stop_requested_ or queue_->is_closed_and_empty()) {
+            goto BatchRoutine_END;
+          }
+        }
+      }
     }
 
     batch_cv_.notify_one();
   }
+
+  BatchRoutine_END:
 
   LOG(INFO) << "End of BatchRoutine() after reading " << num_examples_dequeued_.load() << " examples.";
 }
@@ -564,6 +574,7 @@ void BatchLoader::StartWorkers() {
     return;
   }
 
+  stop_requested_ = false;
   queue_ = make_unique<mvshape::concurrency::BatchQueue<BatchData>>(batch_size_ * kQueueSizeMultiplier);
 
   num_active_threads_ = kNumReaderThreads + 1;
@@ -599,6 +610,7 @@ void BatchLoader::StartWorkers() {
 }
 
 void BatchLoader::StopWorkers() {
+  stop_requested_ = true;
   queue_->Close();
   cv_.notify_all();
   batch_cv_.notify_all();
@@ -628,6 +640,7 @@ void BatchLoader::StopWorkersAsync() {
   DLOG(INFO) << "StopWorkersAsync()";
   auto start_time = mvshape::MicroSecondsSinceEpoch();
 
+  stop_requested_ = true;
   queue_->Close();
 
   auto task = std::thread([=] {
@@ -670,6 +683,10 @@ void BatchLoader::StopWorkersAsync() {
 }
 
 std::unique_ptr<BatchData> BatchLoader::Next() {
+  if (stop_requested_) {
+    LOG(FATAL) << "Next() called after requesting stop.";
+  }
+
   auto start = MicroSecondsSinceEpoch();
   std::unique_ptr<BatchData> ret;
 

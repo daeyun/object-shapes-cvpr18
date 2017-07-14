@@ -86,13 +86,21 @@ class BatchQueue {
   // Closed means no more enqueues will happen. Dequeues can happen.
   bool is_closed() const { return is_closed_; }
 
+  bool is_closed_and_empty() const {
+    return is_closed_ && size_ == 0;
+  }
+
+  volatile int size() const {
+    return size_;
+  }
+
  private:
   BatchQueue() {}
 
-  moodycamel::BlockingConcurrentQueue <T> queue_;
+  moodycamel::BlockingConcurrentQueue<T> queue_;
   size_t max_size_;
   volatile bool is_closed_ = false;
-  int size_ = 0;
+  volatile int size_ = 0;
   std::mutex lock_;
   std::condition_variable cv_;
 };
