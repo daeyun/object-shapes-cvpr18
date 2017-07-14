@@ -37,7 +37,14 @@ TEST(Tensorflow, Basics) {
   // v = Ab^T
   auto v = MatMul(root.WithOpName("v"), A, b, MatMul::TransposeB(true));
   std::vector<Tensor> outputs;
-  ClientSession session(root);
+
+  auto session_options = tf::SessionOptions();
+  session_options.config.mutable_device_count()->clear();
+  session_options.config.mutable_device_count()->insert({"GPU", 0});
+  session_options.config.mutable_gpu_options()->set_visible_device_list("");
+  session_options.config.set_allow_soft_placement(true);
+
+  ClientSession session(root, session_options);
   // Run and fetch v
   TF_CHECK_OK(session.Run({v}, &outputs));
   // Expect outputs[0] == [19; -3]
