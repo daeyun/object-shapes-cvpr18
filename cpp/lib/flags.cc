@@ -11,3 +11,6 @@ DEFINE_string(resources_dir, "", "Path to 'resources' directory.");
 DEFINE_bool(is_test_mode, false, "Indicates if this is a test run.");
 DEFINE_string(tf_model, "", "Path to saved tensorflow model.");
 DEFINE_string(run_id, "default", "A name that identifies the current experiment.");
+DEFINE_int32(batch_size, 50, "Number of batches per training step.");
+DEFINE_string(default_device, "/gpu:0", "TensorFlow device.");
+

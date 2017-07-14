@@ -13,20 +13,15 @@
 #include "cpp/lib/data_io.h"
 #include "cpp/lib/tf_utils.h"
 #include "cpp/lib/flags.h"
+#include "cpp/lib/mvshape_helpers.h"
 #include "proto/dataset.pb.h"
 
+#include <gsl/gsl_assert>
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 #include <boost/filesystem.hpp>
 
-namespace tf = tensorflow;
-namespace mv = mvshape_dataset;
-namespace fs = boost::filesystem;
-
 using namespace mvshape;
-
-DEFINE_int32(batch_size, 50, "Number of batches per training step.");
-DEFINE_string(default_device, "/gpu:0", "TensorFlow device.");
 
 int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
@@ -38,15 +33,12 @@ int main(int argc, char *argv[]) {
   tf::SavedModelBundle model;
 
   int global_step = mvshape::tf_utils::LoadSavedModel({"mv"}, &model);
+  Expects(0 == global_step);
   tf::graph::SetDefaultDevice(FLAGS_default_device, model.meta_graph_def.mutable_graph_def());
 
-  Expects(0 == global_step);
+  tf::Session *session = model.session.get();
 
-  tf::Session* session = model.session.get();
-
-
-
-  // Continue from previously saved checkpoint, if one exists.
+  // Continue from a previously saved checkpoint, if one exists.
   try {
     auto last_checkpoint = tf_utils::FindLastCheckpoint();
     tf_utils::RestoreCheckpoint(session, last_checkpoint);
@@ -54,25 +46,13 @@ int main(int argc, char *argv[]) {
   }
 
 
-
-
-
   //////////////////////////////////////////
-  mvshape_dataset::Examples train_examples;
-  mvshape::Data::LoadExamples(mvshape::FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &train_examples);
-  mvshape::Data::LoadExamples(mvshape::FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"),
-                              &train_examples);
+  mv::Examples train_examples;
+  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &train_examples);
+  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &train_examples);
 
-  mvshape_dataset::Examples test_examples;
-  mvshape::Data::LoadExamples(mvshape::FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &test_examples);
-
-  std::map<int, mv::Examples> test_examples_by_tag = tf_utils::SplitExamplesByTags(
-      test_examples, {mv::NOVELVIEW, mv::NOVELMODEL, mv::NOVELCLASS});
-
-  // Specific to shrec12.
-  Expects(600 == test_examples_by_tag[mv::NOVELVIEW].examples_size());
-  Expects(600 == test_examples_by_tag[mv::NOVELMODEL].examples_size());
-  Expects(600 == test_examples_by_tag[mv::NOVELCLASS].examples_size());
+  mv::Examples test_examples;
+  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &test_examples);
 
   int batch_size = FLAGS_batch_size;
   //////////////////////////////////////////
@@ -127,12 +107,12 @@ int main(int argc, char *argv[]) {
         {"placeholder/target_depth", target_depth},
     };
 
-    timer.Toc();
+//    timer.Toc();
 
     vector<tf::Tensor> out;
     TF_CHECK_OK(model.session->Run(feed, {"iou"}, {"train_op"}, &out));
 
-//    timer.Toc();
+    timer.Toc();
 
     int num_batches_read = loader.num_examples_returned() / batch_size;
     if (num_batches_read % 10 == 0) {
@@ -144,75 +124,11 @@ int main(int argc, char *argv[]) {
                 << loader.num_examples_returned() << " examples total.";
     }
 
-    // TODO
     if (tf_utils::DidChange(loader.epoch())) {
       tf_utils::IncrementEpochCount(session);
-
-      LOG(INFO) << "Starting evaluation at " << loader.epoch();
-
-      mvshape::Timer eval_timer("eval");
-
-      for (int tag: {mv::NOVELVIEW, mv::NOVELMODEL, mv::NOVELCLASS}) {
-        mvshape::Data::BatchLoader eval_loader(&test_examples_by_tag[tag], {
-            mv::Example::kSingleDepthFieldNumber,
-            mv::Example::kMultiviewDepthFieldNumber,
-        }, batch_size, false);
-
-        int count = 0;
-        std::map<string, float> mean;
-
-        vector<string> names{"loss", "iou"};
-        while (true) {
-          auto b = eval_loader.Next();
-
-          if (b == nullptr) {
-            Expects(count == eval_loader.size());
-            break;
-          }
-
-          is_training.scalar<bool>()() = false;
-          tf_utils::SetTensorData<float>(b->file_fields.at(mv::Example::kSingleDepthFieldNumber), &in_depth);
-          tf_utils::SetTensorData<float>(b->file_fields.at(mv::Example::kMultiviewDepthFieldNumber), &target_depth);
-
-          auto result = tf_utils::ScalarOutput<float>(session, names, feed);
-          for (int i = 0; i < names.size(); ++i) {
-            const auto &name = names[i];
-            auto it = mean.find(name);
-            if (it == mean.end()) {
-              mean[name] = 0;
-            }
-            mean[name] += result[i] * b->size;
-          }
-
-          count += b->size;
-        }
-        for (int i = 0; i < names.size(); ++i) {
-          mean[names[i]] /= static_cast<float>(count);
-        }
-
-        std::stringstream stream;
-        stream << mv::Tag_Name(static_cast<mv::Tag>(tag)) << ". ";
-
-        for (int i = 0; i < names.size(); ++i) {
-          stream << names[i] << ": " << mean[names[i]] << ",  ";
-        }
-
-        LOG(INFO) << stream.str();
-
-        eval_loader.StopWorkers();
-      }
-
+      mvshape::evaluation::Shrec12(session, test_examples);
       tf_utils::SaveCheckpoint(session);
-
-      eval_timer.Toc();
-
-      vector<int> step_epoch = tf_utils::ScalarOutput<int>(session, vector<string>{"global_step", "epoch"});
-
-      LOG(INFO) << "=== End of epoch " << step_epoch[1] << ". Global step: " << step_epoch[0] << " ===";
-      LOG(INFO) << "Evaluation and saving took " << eval_timer.Duration() << " seconds.";
-
-    }  // end of DidChange(epoch)
-
+    }
   }
 
   loader.StopWorkers();

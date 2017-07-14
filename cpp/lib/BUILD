@@ -210,3 +210,23 @@ cc_library(
         "//external:cqueue",
     ],
 )
+
+cc_library(
+    name = "mvshape_helpers",
+    srcs = ["mvshape_helpers.cc"],
+    hdrs = ["mvshape_helpers.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":benchmark",
+        ":data_io",
+        ":database",
+        ":file_io",
+        ":random_utils",
+        ":string_utils",
+        ":tf_utils",
+        "//external:gflags",
+        "//third_party:blosc",
+        "//third_party:glog",
+        "//third_party:tensorflow",
+    ],
+)

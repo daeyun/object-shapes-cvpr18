@@ -25,6 +25,7 @@ cc_binary(
         "//cpp/lib:data_io",
         "//cpp/lib:database",
         "//cpp/lib:file_io",
+        "//cpp/lib:mvshape_helpers",
         "//cpp/lib:random_utils",
         "//cpp/lib:string_utils",
         "//cpp/lib:tf_utils",
