@@ -42,10 +42,14 @@ int main(int argc, char *argv[]) {
 
   Expects(0 == global_step);
 
+  tf::Session* session = model.session.get();
+
+
+
   // Continue from previously saved checkpoint, if one exists.
   try {
     auto last_checkpoint = tf_utils::FindLastCheckpoint();
-    tf_utils::RestoreCheckpoint(model.session.get(), last_checkpoint);
+    tf_utils::RestoreCheckpoint(session, last_checkpoint);
   } catch (const std::runtime_error &err) {
   }
 
@@ -142,6 +146,8 @@ int main(int argc, char *argv[]) {
 
     // TODO
     if (tf_utils::DidChange(loader.epoch())) {
+      tf_utils::IncrementEpochCount(session);
+
       LOG(INFO) << "Starting evaluation at " << loader.epoch();
 
       mvshape::Timer eval_timer("eval");
@@ -168,7 +174,7 @@ int main(int argc, char *argv[]) {
           tf_utils::SetTensorData<float>(b->file_fields.at(mv::Example::kSingleDepthFieldNumber), &in_depth);
           tf_utils::SetTensorData<float>(b->file_fields.at(mv::Example::kMultiviewDepthFieldNumber), &target_depth);
 
-          auto result = tf_utils::ScalarOutput<float>(model.session.get(), names, feed);
+          auto result = tf_utils::ScalarOutput<float>(session, names, feed);
           for (int i = 0; i < names.size(); ++i) {
             const auto &name = names[i];
             auto it = mean.find(name);
@@ -196,13 +202,11 @@ int main(int argc, char *argv[]) {
         eval_loader.StopWorkers();
       }
 
-      tf_utils::IncrementEpochCount(model.session.get());
-      tf_utils::SaveCheckpoint(model.session.get());
+      tf_utils::SaveCheckpoint(session);
 
       eval_timer.Toc();
 
-      vector<int> step_epoch = tf_utils::ScalarOutput<int>(model.session.get(),
-                                                           vector<string>{"global_step", "epoch"});
+      vector<int> step_epoch = tf_utils::ScalarOutput<int>(session, vector<string>{"global_step", "epoch"});
 
       LOG(INFO) << "=== End of epoch " << step_epoch[1] << ". Global step: " << step_epoch[0] << " ===";
       LOG(INFO) << "Evaluation and saving took " << eval_timer.Duration() << " seconds.";
