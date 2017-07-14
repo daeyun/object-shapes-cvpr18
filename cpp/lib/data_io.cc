@@ -43,7 +43,7 @@ constexpr float kFar = 40;
 constexpr int kImageNormalizationUpScale = 4;
 constexpr int kNormalizationPadding = 1;
 
-constexpr int kNumReaderThreads = 1;
+constexpr int kNumReaderThreads = 4;
 constexpr int kQueueSizeMultiplier = 3;
 constexpr int kSlowIOWarningMicroSec = 10000;
 constexpr int kThreadJoinWaitSeconds = 5;
