@@ -131,8 +131,8 @@ int RestoreCheckpoint(tf::Session *session, const string &filename) {
 
   auto step_epoch = ScalarOutput<int>(session, vector<string>{"global_step", "epoch"});
 
-  LOG(INFO) << "Restored checkpoint. Global step " << step_epoch[0] << ", epoch: " << step_epoch[1] << " in "
-            << filename;
+  LOG(INFO) << "Restored checkpoint.";
+  LOG(INFO) << "=== Global step " << step_epoch[0] << ", epoch: " << step_epoch[1] << " in " << filename << " ===";
 
   return step_epoch[0];
 };
@@ -198,6 +198,11 @@ string FindLastCheckpoint(const string &checkpoint_dir) {
 
   if (global_step < 0 || global_step == std::numeric_limits<int>::min()) {
     throw std::runtime_error("Checkpoint file not found.");
+  }
+
+  if (boost::algorithm::ends_with(filename, ".index")) {
+    size_t lastindex = filename.find_last_of(".");
+    filename = filename.substr(0, lastindex);
   }
 
   return filename;

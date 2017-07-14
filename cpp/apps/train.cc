@@ -196,12 +196,17 @@ int main(int argc, char *argv[]) {
         eval_loader.StopWorkers();
       }
 
+      tf_utils::IncrementEpochCount(model.session.get());
       tf_utils::SaveCheckpoint(model.session.get());
 
-      tf_utils::IncrementEpochCount(model.session.get());
-
       eval_timer.Toc();
+
+      vector<int> step_epoch = tf_utils::ScalarOutput<int>(model.session.get(),
+                                                           vector<string>{"global_step", "epoch"});
+
+      LOG(INFO) << "=== End of epoch " << step_epoch[1] << ". Global step: " << step_epoch[0] << " ===";
       LOG(INFO) << "Evaluation and saving took " << eval_timer.Duration() << " seconds.";
+
     }  // end of DidChange(epoch)
 
   }
