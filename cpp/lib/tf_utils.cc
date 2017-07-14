@@ -104,6 +104,8 @@ string SaveCheckpoint(tf::Session *session) {
   // https://stackoverflow.com/a/37671613
   TF_CHECK_OK(session->Run(feed, {}, {"saver/control_dependency"}, nullptr));
 
+  LOG(INFO) << "Done";
+
   return out_file;
 };
 

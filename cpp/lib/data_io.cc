@@ -551,7 +551,7 @@ void BatchLoader::BatchRoutine(int thread_id) {
           batch_data_ = std::move(batch_data);
           break;
         } else { // timeout.
-          if (stop_requested_ or num_examples_returned_ >= size()) {
+          if (stop_requested_ or (!is_seamless_ and num_examples_returned_ >= size())) {
             goto BatchRoutine_END;
           }
         }
