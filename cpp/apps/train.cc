@@ -47,20 +47,34 @@ int main(int argc, char *argv[]) {
 
 
   //////////////////////////////////////////
-  mv::Examples train_examples;
-  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &train_examples);
-  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &train_examples);
 
+//  auto experiment = mv::VIEWER_CENTERED;
+  auto experiment = mv::OBJECT_CENTERED;
+
+  mv::Examples train_examples;
   mv::Examples test_examples;
-  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &test_examples);
+
+  switch (experiment) {
+    case mv::VIEWER_CENTERED:
+      Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/train.bin"), &train_examples);
+      Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/validation.bin"), &train_examples);
+
+      Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &test_examples);
+      break;
+
+    case mv::OBJECT_CENTERED:
+      Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_opo/train.bin"), &train_examples);
+      Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_opo/validation.bin"), &train_examples);
+
+      Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_opo/test.bin"), &test_examples);
+      break;
+
+    default:
+      throw std::runtime_error("not implemented");
+  }
 
   int batch_size = FLAGS_batch_size;
   //////////////////////////////////////////
-
-
-
-
-
 
 
 

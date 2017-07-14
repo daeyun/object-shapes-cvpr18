@@ -16,6 +16,18 @@ cc_binary(
 )
 
 cc_binary(
+    name = "generate_metadata",
+    srcs = ["generate_metadata.cc"],
+    includes = ["cpp/lib"],
+    deps = [
+        "//cpp/lib:data_io",
+        "//cpp/lib:database",
+        "//cpp/lib:flags",
+        "//external:gflags",
+    ],
+)
+
+cc_binary(
     name = "train",
     srcs = [
         "train.cc",
