@@ -20,6 +20,16 @@
 namespace mvshape {
 namespace Data {
 
+constexpr float kNear = 0.1;
+constexpr float kFar = 40;
+constexpr int kImageNormalizationUpScale = 4;
+constexpr int kNormalizationPadding = 1;
+
+constexpr int kNumReaderThreads = 4;
+constexpr int kQueueSizeMultiplier = 3;
+constexpr int kSlowIOWarningMicroSec = 10000;
+constexpr int kThreadJoinWaitSeconds = 5;
+
 namespace mv = mvshape_dataset;
 
 void GenerateDataset();
@@ -73,7 +83,8 @@ class BatchLoader {
   BatchLoader(const mv::Examples *examples,
               const vector<int> &field_ids,
               int batch_size,
-              bool is_seamless);
+              bool is_seamless,
+              int num_workers=kNumReaderThreads);
 
   // Deprecated.
   void StopWorkersAsync();
@@ -92,6 +103,10 @@ class BatchLoader {
 
   int num_examples_returned_in_current_epoch() const {
     return num_examples_returned() % size();
+  };
+
+  int num_batches_returned() const {
+    return num_examples_returned() / batch_size_;
   };
 
   int num_examples_returned() const;
@@ -114,6 +129,7 @@ class BatchLoader {
   int num_examples_returned_ = 0;
   int num_active_threads_ = 0;
   bool stop_requested_ = false;
+  int num_workers_;
 
   std::mutex lock_;
   std::mutex batch_lock_;

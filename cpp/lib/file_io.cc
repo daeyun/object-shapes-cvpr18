@@ -119,7 +119,7 @@ void SerializeTensor(const std::string &filename, const void *data, const std::v
   auto absolute_path = boost::filesystem::absolute(filename).string();
   PrepareDir(fs::path(absolute_path).parent_path().string());
 
-  DLOG(INFO) << "Saving " << absolute_path;
+  LOG(INFO) << "Saving " << absolute_path;
   file.open(absolute_path, std::ios_base::out | std::ios_base::binary);
 
   WriteBytes(out_ptr, out_size, &file);
@@ -168,6 +168,7 @@ string WriteIndexFile(const string &dirname, int index) {
 template void SerializeTensor<float>(const std::string &filename, const void *data, const std::vector<int> &shape);
 template void SerializeTensor<double>(const std::string &filename, const void *data, const std::vector<int> &shape);
 template void SerializeTensor<char>(const std::string &filename, const void *data, const std::vector<int> &shape);
+template void SerializeTensor<int>(const std::string &filename, const void *data, const std::vector<int> &shape);
 
 void SerializeImages(const std::string &filename, const vector<cv::Mat> &images, bool compress, bool append) {
   for (const auto &image : images) {
@@ -341,24 +342,26 @@ string NamedEmptyTempDir(const string &name) {
   return path;
 }
 
-string FullDataPath(const string &path) {
+string FullDataPath(const fs::path &path) {
+  auto path_string = path.string();
   auto data_dir = fs::absolute(FLAGS_data_dir);
-  if (path.size() == 0 || path == "/") {
+  if (path_string.size() == 0 || path_string == "/") {
     return data_dir.string();
   }
-  string p = path;
+  string p = path_string;
   if (p[0] == '/') {
     p.erase(0, 1);
   }
   return (data_dir / fs::path(p)).string();
 }
 
-string FullOutPath(const string &path) {
+string FullOutPath(const fs::path &path) {
+  auto path_string = path.string();
   auto data_dir = fs::absolute(FLAGS_out_dir);
-  if (path.size() == 0 || path == "/") {
+  if (path_string.size() == 0 || path_string == "/") {
     return data_dir.string();
   }
-  string p = path;
+  string p = path_string;
   if (p[0] == '/') {
     p.erase(0, 1);
   }

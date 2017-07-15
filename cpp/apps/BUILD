@@ -47,3 +47,24 @@ cc_binary(
         "//third_party:tensorflow",
     ],
 )
+
+cc_binary(
+    name = "eval",
+    srcs = [
+        "eval.cc",
+    ],
+    deps = [
+        "//cpp/lib:benchmark",
+        "//cpp/lib:data_io",
+        "//cpp/lib:database",
+        "//cpp/lib:file_io",
+        "//cpp/lib:mvshape_helpers",
+        "//cpp/lib:random_utils",
+        "//cpp/lib:string_utils",
+        "//cpp/lib:tf_utils",
+        "//external:gflags",
+        "//third_party:blosc",
+        "//third_party:glog",
+        "//third_party:tensorflow",
+    ],
+)

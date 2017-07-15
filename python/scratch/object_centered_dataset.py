@@ -31,7 +31,7 @@ def main():
         lookat=np.array([0, 0, 0]),
         position_xyz=np.array([15, 0, 0]),
         up=np.array([0, 0, 1]),
-        scale=1.0,
+        scale=0.4,
     )
     camera.save()
 

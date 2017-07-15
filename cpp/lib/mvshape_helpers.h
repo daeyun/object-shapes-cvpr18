@@ -33,7 +33,7 @@ struct Shrec12Placeholders {
 
 namespace evaluation {
 
-std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_examples);
+std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_examples, bool save_tensors=false);
 
 }
 }

@@ -8,11 +8,13 @@
 #include <functional>
 
 #include <opencv2/opencv.hpp>
+#include <boost/filesystem.hpp>
 
 #include "common.h"
 
 namespace mvshape {
 namespace FileIO {
+namespace fs = boost::filesystem;
 
 /**
  * Dumps raw bytes to a file.
@@ -87,10 +89,6 @@ string SystemTempDir();
 
 string NamedEmptyTempDir(const string &name);
 
-string FullDataPath(const string &path);
-
-string FullOutPath(const string &path);
-
 bool PrepareDir(const string &filename);
 
 vector<string> RegularFilesInDirectory(const string &dir);
@@ -98,6 +96,9 @@ vector<string> RegularFilesInDirectory(const string &dir);
 void RemoveDirIfExists(const string &path);
 
 string JoinPath(const string &a, const string &b);
+
+string FullOutPath(const fs::path &path);
+string FullDataPath(const fs::path &path);
 
 }  // namespace FileIO
 }  // namespace mvshape

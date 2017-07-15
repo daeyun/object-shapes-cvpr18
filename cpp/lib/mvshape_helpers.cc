@@ -16,6 +16,7 @@
 #include "cpp/lib/data_io.h"
 #include "cpp/lib/tf_utils.h"
 #include "cpp/lib/flags.h"
+#include "string_utils.h"
 
 #include <glog/logging.h>
 #include <gflags/gflags.h>
@@ -23,7 +24,7 @@
 namespace mvshape {
 namespace evaluation {
 
-std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_examples) {
+std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_examples, bool save_tensors) {
   mvshape::Timer timer("eval");
   std::map<string, float> results;
 
@@ -50,14 +51,17 @@ std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_e
   auto ph = Shrec12Placeholders::Build(batch_size);
   ph.is_training.scalar<bool>()() = false;
 
-  const vector<string> float_scalar_names{"loss", "iou"};
+  const vector<string> float_scalar_names{"loss", "iou", "loss_s", "loss_d"};
+  const vector<string> float_tensor_names{"out_depth", "out_silhouette"};
 
   for (int tag: {mv::NOVELVIEW, mv::NOVELMODEL, mv::NOVELCLASS}) {
+
+    int num_workers = (save_tensors) ? 1 : Data::kNumReaderThreads;
 
     mvshape::Data::BatchLoader eval_loader(&eval_examples_by_tag[tag], {
         mv::Example::kSingleDepthFieldNumber,
         mv::Example::kMultiviewDepthFieldNumber,
-    }, batch_size, false);
+    }, batch_size, false, num_workers);
 
     int example_count = 0;
 
@@ -91,6 +95,47 @@ std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_e
       }
 
       example_count += batch->size;
+
+      if (save_tensors) {
+        auto i_batch = eval_loader.num_batches_returned();
+
+        // Saving output tensors
+        vector<tf::Tensor> out;
+        TF_CHECK_OK(session->Run(feed, float_tensor_names, {}, &out));
+
+        Ensures(out.size() == float_tensor_names.size());
+        for (int j = 0; j < out.size(); ++j) {
+          string out_name = (fs::path(mv::Tag_Name(static_cast<mv::Tag>(tag))) / float_tensor_names[j]
+              / std::to_string(i_batch - 1)).string();
+          tf_utils::SaveTensor(session, out[j], out_name);
+        }
+
+        // Saving input tensors
+        for (const auto &item: feed) {
+          string placeholder_name = item.first;
+          std::replace(placeholder_name.begin(), placeholder_name.end(), '/', '_');
+          const auto &tensor = item.second;
+          if (tensor.dims() == 0) {
+            LOG(INFO) << "Skipping scalar " << item.first;
+            continue;
+          }
+          string out_name = (fs::path(mv::Tag_Name(static_cast<mv::Tag>(tag))) / placeholder_name
+              / std::to_string(i_batch - 1)).string();
+          tf_utils::SaveTensor(session, tensor, out_name);
+        }
+
+        // Saving indices because BatchLoader shuffles.
+        string out_name = (fs::path(mv::Tag_Name(static_cast<mv::Tag>(tag))) / "index"
+            / std::to_string(i_batch - 1)).string();
+        FileIO::SerializeTensor<int>(tf_utils::FindAndPrepareOutputDirectory(session, out_name),
+                                     batch->example_indices.data(),
+                                     vector<int>{batch->example_indices.size()});
+      }  // save_tensors
+
+
+
+
+
     }
     for (int i = 0; i < float_scalar_names.size(); ++i) {
       results[float_scalar_names[i]] /= static_cast<float>(example_count);
@@ -103,7 +148,9 @@ std::map<string, float> Shrec12(tf::Session *session, const mv::Examples &eval_e
       stream << float_scalar_names[i] << ": " << results[float_scalar_names[i]] << ",  ";
     }
 
+    LOG(INFO) << "#############################################";
     LOG(INFO) << "EVAL  " << stream.str();
+    LOG(INFO) << "#############################################";
 
     eval_loader.StopWorkers();
   }

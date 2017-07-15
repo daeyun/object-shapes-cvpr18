@@ -31,7 +31,8 @@ int LoadSavedModel(const std::unordered_set<std::string> &tags, tf::SavedModelBu
   auto session_options = tf::SessionOptions();
   auto run_options = tf::RunOptions();
 
-  session_options.config.mutable_gpu_options()->set_allow_growth(true);
+//  session_options.config.mutable_gpu_options()->set_allow_growth(true);
+//  session_options.config.mutable_gpu_options()->set_allocator_type("BFC");
 
   if (FLAGS_tf_model.empty()) {
     LOG(ERROR) << "--tf_model flag missing.";
@@ -132,22 +133,24 @@ int IncrementEpochCount(tf::Session *session) {
   return ScalarOutput<int>(session, "epoch");
 }
 
-string SaveTensor(tf::Session *session, const tf::Tensor &tensor, const string &name) {
-  Expects(!name.empty());
-
+string FindAndPrepareOutputDirectory(tf::Session *session, const string &name) {
   vector<int> epoch_step = ScalarOutput<int>(session, vector<string>{"epoch", "global_step"});
   auto step_name = WithLeadingZeros(epoch_step[0], 4) + "_" + WithLeadingZeros(epoch_step[1], 9);
-
   string tf_model_name = fs::path(FLAGS_tf_model).remove_trailing_separator().stem().string();
   auto out_dir = mvshape::FileIO::FullOutPath((fs::path("tf_out") / fs::basename(tf_model_name) /
       FLAGS_run_id / "tensors" / step_name).string());
-
-  if (!fs::exists(out_dir)) {
-    fs::create_directories(out_dir);
-    LOG(INFO) << "mkdir -p " << out_dir;
-  }
-
   string out_file = (fs::path(out_dir) / (name + ".bin")).string();
+
+  // name could contain a slash so out_dir might not be the parent directory.
+  FileIO::PrepareDir(fs::path(out_file).parent_path().string());
+  return out_file;
+}
+
+string SaveTensor(tf::Session *session, const tf::Tensor &tensor, const string &name) {
+  Expects(!name.empty());
+
+  string out_file = FindAndPrepareOutputDirectory(session, name);
+
 
   LOG(INFO) << "Saving " << out_file;
 
@@ -187,39 +190,54 @@ string FindLastCheckpoint(const string &checkpoint_dir) {
   }
 
   if (global_step < 0 || global_step == std::numeric_limits<int>::min()) {
-    throw std::runtime_error("Checkpoint file not found.");
+    LOG(INFO) << "Checkpoint file not found.";
+    filename = "";
   }
 
   if (boost::algorithm::ends_with(filename, ".index")) {
-    size_t lastindex = filename.find_last_of(".");
-    filename = filename.substr(0, lastindex);
+    filename = filename.substr(0, filename.find_last_of("."));
   }
 
   return filename;
 }
 
-string FindCheckpointAtEpoch(const string &checkpoint_dir, int epoch) {
+string FindCheckpointAtEpoch(int epoch) {
+  string tf_model_name = fs::path(FLAGS_tf_model).remove_trailing_separator().stem().string();
+  auto checkpoint_dir = mvshape::FileIO::FullOutPath((fs::path("tf_out")
+      / tf_model_name / FLAGS_run_id / "checkpoints").string());
   auto files = mvshape::FileIO::RegularFilesInDirectory(checkpoint_dir);
+
   Expects(std::is_sorted(std::begin(files), std::end(files)));
+
+  string filename = "";
 
   for (const auto &file : files) {
     if (boost::algorithm::ends_with(file, ".index")) {
       auto epoch_and_global_step = mvshape::tf_utils::ParseCheckpointFilename(file);
-      if (epoch_and_global_step.first > epoch) {
-        return file;
+      if (epoch_and_global_step.first == epoch) {
+        filename = file;
+        break;
       }
     }
   }
 
-  LOG(ERROR) << "Checkpoint at epoch " << epoch << " not found in " << checkpoint_dir;
-  throw std::runtime_error("Checkpoint file not found.");
+  if (filename.empty()) {
+    LOG(ERROR) << "Checkpoint at epoch " << epoch << " not found in " << checkpoint_dir;
+    throw std::runtime_error("Checkpoint file not found.");
+  }
+
+  if (boost::algorithm::ends_with(filename, ".index")) {
+    filename = filename.substr(0, filename.find_last_of("."));
+  }
+
+  return filename;
 }
 
 string FindLastCheckpoint() {
   string tf_model_name = fs::path(FLAGS_tf_model).remove_trailing_separator().stem().string();
-  auto out_dir = mvshape::FileIO::FullOutPath((fs::path("tf_out")
+  auto checkpoing_dir = mvshape::FileIO::FullOutPath((fs::path("tf_out")
       / tf_model_name / FLAGS_run_id / "checkpoints").string());
-  return FindLastCheckpoint(out_dir);
+  return FindLastCheckpoint(checkpoing_dir);
 }
 
 bool DidChange(int value) {
@@ -237,19 +255,24 @@ std::map<int, mv::Examples> SplitExamplesByTags(const mv::Examples &examples,
 
   for (const auto &example :examples.examples()) {
     for (const auto &tag :example.tags()) {
-      if (tags.find(tag) != tags.end()) {
+      if (tags.find(tag) != tags.end()) { // Exists.
         examples_by_tag[tag].add_examples()->CopyFrom(example);
       }
-      break;
     }
   }
+
+  // TODO: extract common tags.
 
   std::stringstream stream;
   stream << "SplitExamplesByTags: ";
 
   for (const auto &tag: tags) {
+    auto &e = examples_by_tag[tag];
+    e.set_split_name(examples.split_name());
+    e.set_dataset_name(examples.dataset_name());
+
     stream << mv::Tag_Name(static_cast<mv::Tag >(tag)) << "("
-           << examples_by_tag[tag].examples_size() << ") ";
+           << e.examples_size() << ") ";
   }
   LOG(INFO) << stream.str();
   return examples_by_tag;

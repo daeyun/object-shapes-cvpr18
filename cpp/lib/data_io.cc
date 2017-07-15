@@ -38,16 +38,6 @@ namespace Data {
 namespace mv = mvshape_dataset;
 namespace fs = boost::filesystem;
 
-constexpr float kNear = 0.1;
-constexpr float kFar = 40;
-constexpr int kImageNormalizationUpScale = 4;
-constexpr int kNormalizationPadding = 1;
-
-constexpr int kNumReaderThreads = 4;
-constexpr int kQueueSizeMultiplier = 3;
-constexpr int kSlowIOWarningMicroSec = 10000;
-constexpr int kThreadJoinWaitSeconds = 5;
-
 void RenderImages(const vector<const mv::Rendering *> &renderables) {
   auto sorted_renderables = vector<const mv::Rendering *>(renderables.begin(), renderables.end());
 
@@ -430,11 +420,13 @@ void RenderingReader::RandomIndices(int n, vector<int> *indices) {
 BatchLoader::BatchLoader(const mv::Examples *examples,
                          const vector<int> &field_ids,
                          int batch_size,
-                         bool is_seamless)
+                         bool is_seamless,
+                         int num_workers)
     : reader_({examples}),
       field_ids_(field_ids),
       batch_size_(batch_size),
       is_seamless_(is_seamless),
+      num_workers_(num_workers),
       queue_(nullptr),
       num_examples_dequeued_(0),
       num_examples_enqueued_(0) {
@@ -577,7 +569,7 @@ void BatchLoader::StartWorkers() {
   stop_requested_ = false;
   queue_ = make_unique<mvshape::concurrency::BatchQueue<BatchData>>(batch_size_ * kQueueSizeMultiplier);
 
-  num_active_threads_ = kNumReaderThreads + 1;
+  num_active_threads_ = num_workers_ + 1;
 
   batch_thread_ = std::thread([&] {
     BatchRoutine(0);
@@ -588,7 +580,7 @@ void BatchLoader::StartWorkers() {
     cv_.notify_all();
   });
 
-  for (int i = 0; i < kNumReaderThreads; ++i) {
+  for (int i = 0; i < num_workers_; ++i) {
     reader_threads_.emplace_back([&] {
       DataReaderRoutine(i);
       {
@@ -600,7 +592,7 @@ void BatchLoader::StartWorkers() {
   }
 
   std::stringstream stream;
-  stream << "Launched " << kNumReaderThreads + 1 << " threads fetching " << size() << " examples";
+  stream << "Launched " << num_workers_ + 1 << " threads fetching " << size() << " examples";
   if (is_seamless_) {
     stream << " indefinitely.";
   } else {

@@ -3,6 +3,8 @@
 //
 #pragma once
 
+#include <algorithm>
+
 #include <gsl/gsl_assert>
 #include <Eigen/Dense>
 
@@ -41,5 +43,7 @@ Eigen::Matrix<double, rows, cols> ParseMatrix(const string &str, char delimiter 
 }
 
 std::string WithLeadingZeros(int value, int num_digits);
+
+std::string ToLower(const std::string &s);
 
 }

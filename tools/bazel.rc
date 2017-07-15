@@ -5,3 +5,7 @@ build:opt -c opt --copt=-Ofast --copt=-mfpmath=sse
 test:dbg --test_output=streamed
 test --test_output=summary
 test --action_env=CUDA_VISIBLE_DEVICES=""
+
+build:release -c opt --config=opt //cpp/apps:all //cpp/ctypes:all
+
+

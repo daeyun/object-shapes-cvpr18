@@ -162,6 +162,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":common",
+        "@boost//:algorithm",
     ],
 )
 
@@ -218,6 +219,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":benchmark",
+        ":common",
         ":data_io",
         ":database",
         ":file_io",
@@ -228,5 +230,24 @@ cc_library(
         "//third_party:blosc",
         "//third_party:glog",
         "//third_party:tensorflow",
+    ],
+)
+
+cc_library(
+    name = "voxel",
+    srcs = ["voxel.cc"],
+    hdrs = ["voxel.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":benchmark",
+        ":camera",
+        ":common",
+        ":data_io",
+        ":file_io",
+        ":random_utils",
+        ":string_utils",
+        "//external:gflags",
+        "//third_party:glog",
+        "//third_party/src/polygon2voxel",
     ],
 )

@@ -104,7 +104,12 @@ std::pair<int, int> ParseCheckpointFilename(const string &filename);
 
 string FindLastCheckpoint(const string &checkpoint_dir);
 
-string FindCheckpointAtEpoch(const string &checkpoint_dir, int epoch);
+string SaveTensor(tf::Session *session, const tf::Tensor &tensor, const string &name);
+
+string FindCheckpointAtEpoch(int epoch);
+
+string FindAndPrepareOutputDirectory(tf::Session *session, const string &name);
+
 
 string FindLastCheckpoint();
 

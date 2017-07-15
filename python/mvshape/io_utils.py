@@ -432,19 +432,19 @@ def is_dir_empty(dirpath):
     return len(dirnames) == 0 and len(filenames) == 0
 
 
-def bytes_to_float32_array(s: bytes):
+def bytes_to_array(s: bytes, dtype=np.float32):
     dims = struct.unpack('i', s[:4])[0]
     assert 0 <= dims < 1000
     shape = struct.unpack('i' * dims, s[4:4 * dims + 4])
     for dim in shape:
         assert dim > 0
-    ret = np.frombuffer(s[4 * dims + 4:], dtype=np.float32)
+    ret = np.frombuffer(s[4 * dims + 4:], dtype=dtype)
     assert ret.size == np.prod(shape), (ret.size, shape)
     ret.shape = shape
     return ret.copy()
 
 
-def read_float32_array(filename):
+def read_array(filename, dtype=np.float32):
     """
     Reads a binary file with the following format:
     [int32_t number of dimensions n]
@@ -456,14 +456,14 @@ def read_float32_array(filename):
     """
     with open(filename, mode='rb') as f:
         content = f.read()
-    return bytes_to_float32_array(content)
+    return bytes_to_array(content, dtype=dtype)
 
 
-def read_float32_array_compressed(filename):
+def read_array_compressed(filename, dtype=np.float32):
     """
     Reads a binary file compressed with Blosc. Otherwise the same as read_float32_array.
     """
     with open(filename, mode='rb') as f:
         compressed = f.read()
     decompressed = blosc.decompress(compressed)
-    return bytes_to_float32_array(decompressed)
+    return bytes_to_array(decompressed, dtype=dtype)
