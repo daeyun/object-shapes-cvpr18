@@ -1,6 +1,7 @@
 /bazel-*
 libmvshape.so
 /third_party/install/
+/third_party/nix_env
 
 
 ### C++ ###

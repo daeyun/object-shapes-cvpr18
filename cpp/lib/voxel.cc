@@ -65,7 +65,7 @@ class VoxelGrid {
 
  private:
   vector<uint8_t> data_;
-  const int nx_, ny_, nz_;
+  int nx_, ny_, nz_;
 };
 
 void Voxelize(const vector<array<int, 3>> &faces, const vector<array<float, 3>> &vertices,

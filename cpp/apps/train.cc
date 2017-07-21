@@ -46,7 +46,6 @@ int main(int argc, char *argv[]) {
   tf::Session *session = model.session.get();
 
   // Continue from a previously saved checkpoint, if one exists.
-  // Continue from a previously saved checkpoint, if one exists.
   string checkpoint;
   if (FLAGS_restore_epoch < 0) {
     checkpoint = tf_utils::FindLastCheckpoint();
