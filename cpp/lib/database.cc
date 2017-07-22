@@ -7,7 +7,7 @@
 #include <glog/logging.h>
 
 #include <gsl/gsl_assert>
-#include <sqlite_modern_cpp/sqlite_modern_cpp.h>
+#include <sqlite_modern_cpp.h>
 #include <boost/filesystem.hpp>
 #include <unordered_map>
 #include <boost/algorithm/string.hpp>

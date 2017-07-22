@@ -6,7 +6,7 @@
 #include <condition_variable>
 #include <gsl/gsl_assert>
 #include <glog/logging.h>
-#include <concurrentqueue/blockingconcurrentqueue.h>
+#include "blockingconcurrentqueue.h"
 
 #pragma once
 

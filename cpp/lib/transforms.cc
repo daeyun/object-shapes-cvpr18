@@ -9,8 +9,6 @@
 
 #include "glog/logging.h"
 
-#include <glm/glm.hpp>
-
 namespace mvshape {
 
 constexpr float kBackgroundValue = std::numeric_limits<float>::quiet_NaN();

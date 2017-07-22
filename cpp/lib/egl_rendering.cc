@@ -31,8 +31,6 @@
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/LogStream.hpp>
 
-#include <glm/glm.hpp>
-
 #include "camera.h"
 #include "file_io.h"
 #include "resources.h"

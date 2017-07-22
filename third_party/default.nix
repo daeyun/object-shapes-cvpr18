@@ -1,9 +1,10 @@
 with import <nixpkgs> {};
+
 stdenv.mkDerivation rec {
   name = "env";
   env = buildEnv { name = name; paths = buildInputs;};
   buildInputs = [
-    opencv
+    opencv3
     c-blosc
     eigen
     assimp
@@ -11,6 +12,8 @@ stdenv.mkDerivation rec {
     gmock
     glog
     protobuf3_2
-    sqlite
+    gcc6
+    (sqlite // { meta = ( sqlite.meta // { outputsToInstall = ["out" "dev"]; } ); })
+    (boost // { meta = ( boost.meta // { outputsToInstall = ["out" "dev"]; } ); })
   ];
 }

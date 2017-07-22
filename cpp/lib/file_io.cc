@@ -9,6 +9,8 @@
 #include <fstream>
 #include <chrono>
 #include <type_traits>
+#include <algorithm>
+#include <numeric>
 #include <sys/stat.h>
 
 #include <gsl/gsl_assert>
