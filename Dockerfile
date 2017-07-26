@@ -47,6 +47,8 @@ RUN apt-get install -y libopencv-dev
 
 # Install gflags, gtest, glog
 RUN apt-get install -y libgflags-dev libgtest-dev libgoogle-glog-dev
+#https://askubuntu.com/questions/145887/why-no-library-files-installed-for-google-test
+RUN cd /usr/src/gtest && cmake . && make -j4 && mv libg* /usr/lib/
 
-# Install other dependencies
-RUN apt-get install -y libblosc-dev libsqlite3-dev libassimp-dev assimp-utils libprotobuf-dev
+#Install other dependencies
+RUN apt-get install -y libblosc-dev libsqlite3-dev libassimp-dev assimp-utils libboost-all-dev libglm-dev

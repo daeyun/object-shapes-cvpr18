@@ -95,7 +95,7 @@ void DecompressBytes(const void *src, std::string *out) {
   out->resize(nbytes);
   int decompressed_size = blosc_decompress_ctx(src, &(*out)[0], out->size(), 1);
   if (decompressed_size <= 0) {
-    throw std::runtime_error("Deompression failed.");
+    throw std::runtime_error("Decompression failed.");
   }
 }
 

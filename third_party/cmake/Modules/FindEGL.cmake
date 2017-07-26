@@ -9,84 +9,93 @@
 # EGL_LIBRARIES    - all EGL related libraries: EGL, OpenGL, GLdispatch
 
 
-if(NOT EGL_INCLUDE_DIR)
+if (NOT EGL_INCLUDE_DIR)
 
-  # If we have a root defined look there first
-  if(EGL_ROOT)
-    find_path(EGL_INCLUDE_DIR EGL/egl.h PATHS ${EGL_ROOT}/include
-      NO_DEFAULT_PATH
-    )
-  endif()
+    # If we have a root defined look there first
+    if (EGL_ROOT)
+        find_path(EGL_INCLUDE_DIR EGL/egl.h PATHS ${EGL_ROOT}/include
+                NO_DEFAULT_PATH
+                )
+    endif ()
 
-  if(NOT EGL_INCLUDE_DIR)
-    find_path(EGL_INCLUDE_DIR EGL/egl.h PATHS
-      /usr/local/include
-      /usr/include
-    )
-  endif()
-endif()
+    if (NOT EGL_INCLUDE_DIR)
+        find_path(EGL_INCLUDE_DIR EGL/egl.h PATHS
+                /usr/local/nvidia/lib64
+                /usr/local/include
+                /usr/include
+                )
+    endif ()
+endif ()
 
-if(NOT EGL_LIBRARY)
-  # If we have a root defined look there first
-  if(EGL_ROOT)
-    find_library(EGL_LIBRARY EGL PATHS ${EGL_ROOT}/lib
-      NO_DEFAULT_PATH
-    )
-  endif()
+if (NOT EGL_LIBRARY)
+    # If we have a root defined look there first
+    if (EGL_ROOT)
+        find_library(EGL_LIBRARY EGL PATHS ${EGL_ROOT}/lib
+                NO_DEFAULT_PATH
+                )
+    endif ()
 
-  if(NOT EGL_LIBRARY)
-    find_library(EGL_LIBRARY EGL PATHS
-      /usr/local/lib
-      /usr/lib
-    )
-  endif()
-endif()
+    if (NOT EGL_LIBRARY)
+        find_library(EGL_LIBRARY EGL PATHS
+                /usr/local/nvidia/lib64
+                /usr/lib/nvidia-381
+                /usr/local/lib
+                /usr/lib
+                )
+    endif ()
+endif ()
 
-if(NOT EGL_opengl_LIBRARY)
-  # If we have a root defined look there first
-  if(EGL_ROOT)
-    find_library(EGL_opengl_LIBRARY OpenGL PATHS ${EGL_ROOT}/lib
-      NO_DEFAULT_PATH
-    )
-  endif()
+if (NOT EGL_opengl_LIBRARY)
+    # If we have a root defined look there first
+    if (EGL_ROOT)
+        find_library(EGL_opengl_LIBRARY OpenGL PATHS ${EGL_ROOT}/lib
+                NO_DEFAULT_PATH
+                )
+    endif ()
 
-  if(NOT EGL_opengl_LIBRARY)
-    find_library(EGL_opengl_LIBRARY OpenGL PATHS
-      /usr/local/lib
-      /usr/lib
-    )
-  endif()
-endif()
+    if (NOT EGL_opengl_LIBRARY)
+        find_library(EGL_opengl_LIBRARY OpenGL PATHS
+                /usr/local/nvidia/lib64
+                /usr/lib/nvidia-381
+                /usr/local/lib
+                /usr/lib
+                )
+    endif ()
+endif ()
 
-if(NOT EGL_gldispatch_LIBRARY)
-  # If we have a root defined look there first
-  if(EGL_ROOT)
-    find_library(EGL_gldispatch_LIBRARY GLdispatch PATHS ${EGL_ROOT}/lib
-      NO_DEFAULT_PATH
-    )
-  endif()
+if (NOT EGL_gldispatch_LIBRARY)
+    # If we have a root defined look there first
+    if (EGL_ROOT)
+        find_library(EGL_gldispatch_LIBRARY GLdispatch PATHS ${EGL_ROOT}/lib
+                NO_DEFAULT_PATH
+                )
+    endif ()
 
-  if(NOT EGL_gldispatch_LIBRARY)
-    find_library(EGL_gldispatch_LIBRARY GLdispatch PATHS
-      /usr/local/lib
-      /usr/lib
-    )
-  endif()
+    if (NOT EGL_gldispatch_LIBRARY)
+        find_library(EGL_gldispatch_LIBRARY GLdispatch PATHS
+                /usr/local/nvidia/lib64
+                /usr/lib/nvidia-381
+                /usr/local/lib
+                /usr/lib
+                )
+    endif ()
 
-  # For the NVIDIA 358 drivers there isn't a libGLdispath.so. The
-  # proper one gets installed as libGLdispatch.so.0.
-  if(NOT EGL_gldispatch_LIBRARY)
-    find_library(EGL_gldispatch_LIBRARY libGLdispatch.so.0 PATHS
-      /usr/local/lib
-      /usr/lib
-    )
-  endif()
-endif()
+    # For the NVIDIA 358 drivers there isn't a libGLdispath.so. The
+    # proper one gets installed as libGLdispatch.so.0.
+    if (NOT EGL_gldispatch_LIBRARY)
+        find_library(EGL_gldispatch_LIBRARY libGLdispatch.so.0 PATHS
+                /usr/local/nvidia/lib64
+                /usr/lib/nvidia-381
+                /usr/local/lib
+                /usr/lib
+                )
+    endif ()
+endif ()
 
 set(EGL_LIBRARIES ${EGL_LIBRARY} ${EGL_opengl_LIBRARY} ${EGL_gldispatch_LIBRARY})
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(EGL  DEFAULT_MSG
-                                  EGL_LIBRARY  EGL_opengl_LIBRARY EGL_gldispatch_LIBRARY EGL_INCLUDE_DIR)
+find_package_handle_standard_args(EGL DEFAULT_MSG
+        EGL_LIBRARY EGL_opengl_LIBRARY EGL_gldispatch_LIBRARY EGL_INCLUDE_DIR)
 
 mark_as_advanced(EGL_DIR EGL_INCLUDE_DIR EGL_LIBRARY EGL_opengl_LIBRARY EGL_gldispatch_LIBRARY)
