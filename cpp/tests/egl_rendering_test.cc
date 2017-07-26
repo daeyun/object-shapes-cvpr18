@@ -275,3 +275,7 @@ TEST(DepthRecon, TorusPointCloudFromNormals) {
 
 //  FileIO::SerializeMatrix("/home/daeyun/tmp/pts2.bin", out_pts.cast<float>());
 }
+
+TEST(SanityCheck, HelloWorld) {
+//  RunDemo();
+}

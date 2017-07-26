@@ -1,29 +1,54 @@
-add_library(cpp_gsl INTERFACE)
-target_include_directories(cpp_gsl SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/repos/cpp_gsl/include)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/third_party/cmake/Modules/")
+set(CMAKE_PREFIX_PATH ${CMAKE_SOURCE_DIR}/third_party/nix_env)
 
-add_library(eigen3 INTERFACE)
-target_include_directories(eigen3 SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include/eigen3)
+#set(BUILD_SHARED_LIBS OFF)
 
-add_library(opencv3 INTERFACE)
-target_include_directories(opencv3 SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
+find_package(GFlags REQUIRED)
+find_package(Glog REQUIRED)
+find_package(OpenCV REQUIRED)
+find_package(ASSIMP REQUIRED)
+find_package(SQLite3 REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(BLOSC REQUIRED)
 
-add_library(glog INTERFACE)
-target_include_directories(glog SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
+add_library(third_party_core INTERFACE)
+target_include_directories(third_party_core INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/repos/cpp_gsl/include
+        ${CMAKE_CURRENT_LIST_DIR}/repos/eigen
+        ${CMAKE_CURRENT_LIST_DIR}/nix_env/include
+        ${CMAKE_CURRENT_LIST_DIR}/repos/sqlite_modern_cpp/hdr
+        ${CMAKE_CURRENT_LIST_DIR}/repos/concurrentqueue
+        ${CMAKE_CURRENT_LIST_DIR}/repos/cpp-lru-cache/include
+        ${GLESv2_INCLUDE_DIR}
+        ${GFLAGS_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
+        ${GLOG_INCLUDE_DIRS}
+        ${OpenCV_INCLUDE_DIR}
+        ${ASSIMP_INCLUDE_DIR}
+        ${BLOSC_INCLUDE_DIR}
+        ${SQLITE3_INCLUDE_DIR}
+        ${CMAKE_CURRENT_BINARY_DIR}
+        )
 
-add_library(cqueue INTERFACE)
-target_include_directories(cqueue SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/repos/concurrentqueue)
+target_link_libraries(third_party_core INTERFACE
+        ${Boost_SYSTEM_LIBRARY}
+        ${Boost_FILESYSTEM_LIBRARY}
+        ${Boost_LOG_LIBRARY}
 
-add_library(gflags INTERFACE)
-target_include_directories(gflags SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
+        # ${GFLAGS_LIBRARIES}
+         ${SQLITE3_LIBRARY_RELEASE}
+         ${ASSIMP_LIBRARIES}
+         ${GLOG_LIBRARIES}
 
-add_library(boost INTERFACE)
-target_include_directories(boost SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
+        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libgflags.a
+        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libblosc.a
 
-add_library(assimp INTERFACE)
-target_include_directories(assimp SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
+        ${OpenCV_LIBS}
+        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libz.so
+        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libprotobuf.so
+        )
 
-add_library(blosc INTERFACE)
-target_include_directories(blosc SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
 
 add_library(tensorflow INTERFACE)
 target_include_directories(tensorflow SYSTEM INTERFACE
@@ -31,33 +56,32 @@ target_include_directories(tensorflow SYSTEM INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}/install/tensorflow/include/tf/bazel-genfiles
         ${CMAKE_CURRENT_LIST_DIR}/install/tensorflow/include/tf/third_party/eigen3
         )
-
-add_library(sqlite3 INTERFACE)
-target_include_directories(sqlite3 SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/nix_env/include)
-
-add_library(sqlite_modern_cpp INTERFACE)
-target_include_directories(sqlite_modern_cpp SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/repos/sqlite_modern_cpp/hdr)
-target_link_libraries(sqlite_modern_cpp INTERFACE sqlite3)
-
-add_library(lrucache INTERFACE)
-target_include_directories(lrucache SYSTEM INTERFACE ${CMAKE_CURRENT_LIST_DIR}/repos/cpp-lru-cache/include)
-
-find_package(EGL)
-find_package(GLESv2)
-#add_library(egl INTERFACE)
-#target_include_directories(egl SYSTEM INTERFACE ${EGL_INCLUDE_DIR} /usr/include)
-#target_link_libraries(egl INTERFACE ${EGL_LIBRARY})
-#set_target_properties(egl PROPERTIES COMPILE_FLAGS "-isystem /usr/include")
-
-ADD_CUSTOM_TARGET(egl_symlink
-        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/EGL ${CMAKE_BINARY_DIR}/third_party/EGL
-        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/GLES3 ${CMAKE_BINARY_DIR}/third_party/GLES3
-        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/KHR ${CMAKE_BINARY_DIR}/third_party/KHR
-        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/X11 ${CMAKE_BINARY_DIR}/third_party/X11
-        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/GL ${CMAKE_BINARY_DIR}/third_party/GL
+target_link_libraries(tensorflow INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/install/tensorflow/lib/libtensorflow_cc.so
         )
 
-add_library(egl INTERFACE)
-target_link_libraries(egl INTERFACE ${EGL_LIBRARY})
-target_include_directories(egl SYSTEM INTERFACE ${CMAKE_BINARY_DIR}/third_party)
-add_dependencies(egl egl_symlink)
+#file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/third_party/links/usr/include/)
+#ADD_CUSTOM_TARGET(egl_symlink
+#        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/EGL ${CMAKE_BINARY_DIR}/third_party/links/usr/include/EGL
+#        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/GLES3 ${CMAKE_BINARY_DIR}/third_party/links/usr/include/GLES3
+#        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/KHR ${CMAKE_BINARY_DIR}/third_party/links/usr/include/KHR
+#        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/X11 ${CMAKE_BINARY_DIR}/third_party/links/usr/include/X11
+#        COMMAND ${CMAKE_COMMAND} -E create_symlink ${EGL_INCLUDE_DIR}/GL ${CMAKE_BINARY_DIR}/third_party/links/usr/include/GL
+#        )
+
+#add_library(egl INTERFACE)
+#target_link_libraries(egl INTERFACE
+#        ${OPENGL_LIBRARIES}
+#        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libz.so
+##        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libEGL.so
+##        ${CMAKE_CURRENT_LIST_DIR}/nix_env/lib/libGLESv2.so
+#        /usr/lib/nvidia-381/libEGL.so
+#        /usr/lib/nvidia-381/libGLESv2.so
+#        /usr/lib/nvidia-381/libGLdispatch.so.0
+#        )
+#target_include_directories(egl SYSTEM INTERFACE
+#        ${EGL_INCLUDE_DIR}
+#        ${CMAKE_SOURCE_DIR}/third_party/nix_env/include
+#        ${CMAKE_BINARY_DIR}/third_party/links/usr/include
+#        )
+##add_dependencies(egl egl_symlink)
