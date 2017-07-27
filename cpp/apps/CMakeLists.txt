@@ -1,0 +1,11 @@
+add_executable(generate_dataset generate_dataset.cc)
+target_link_libraries(generate_dataset mvshape_cpp_core data_io database egl_rendering)
+
+add_executable(generate_metadata generate_metadata.cc)
+target_link_libraries(generate_metadata mvshape_cpp_core data_io)
+
+add_executable(train train.cc)
+target_link_libraries(train mvshape_cpp_core data_io database tf_utils mvshape_helpers)
+
+add_executable(eval eval.cc)
+target_link_libraries(eval mvshape_cpp_core data_io database tf_utils mvshape_helpers)

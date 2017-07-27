@@ -40,7 +40,7 @@ target_link_libraries(egl_rendering
         egl)
 
 add_library(data_io STATIC data_io.cc)
-target_link_libraries(data_io mvshape_cpp_core mvshape_proto egl_rendering)
+target_link_libraries(data_io mvshape_cpp_core mvshape_proto egl_rendering database)
 
 add_library(tf_utils STATIC tf_utils.cc)
 target_link_libraries(tf_utils PUBLIC mvshape_cpp_core tensorflow)
@@ -50,11 +50,8 @@ target_include_directories(tf_utils
         ${CMAKE_SOURCE_DIR}/third_party/install/protobuf/include
         )
 
-
-
-
 add_library(database STATIC database.cc)
 target_link_libraries(database mvshape_cpp_core)
 
-#add_library(mvshape_helpers STATIC mvshape_helpers.cc)
-#target_link_libraries(mvshape_helpers mvshape_cpp_core database tf_utils data_io)
+add_library(mvshape_helpers STATIC mvshape_helpers.cc)
+target_link_libraries(mvshape_helpers mvshape_cpp_core database tf_utils data_io)

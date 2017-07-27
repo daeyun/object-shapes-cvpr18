@@ -19,7 +19,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast -mfpmath=both -ma
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/third_party/cmake/Modules/")
 
-include(third_party/CMakeLists.txt)
+add_subdirectory(third_party)
 
 add_subdirectory(proto)
 add_subdirectory(cpp)

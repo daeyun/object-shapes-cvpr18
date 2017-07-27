@@ -1,6 +1,5 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/third_party/cmake/Modules/")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 set(BUILD_SHARED_LIBS OFF)
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
@@ -13,7 +12,6 @@ set(CMAKE_PREFIX_PATH
         )
 
 find_package(OpenCV REQUIRED
-        HINTS ${CMAKE_SOURCE_DIR}/third_party/install/opencv/
         PATHS ${CMAKE_SOURCE_DIR}/third_party/install/opencv/
         )
 
@@ -25,7 +23,6 @@ find_package(EGL)
 find_package(GLESv2)
 
 find_package(Eigen3 REQUIRED
-        HINTS ${CMAKE_SOURCE_DIR}/third_party/repos/eigen
         PATHS ${CMAKE_SOURCE_DIR}/third_party/repos/eigen
         )
 
@@ -60,16 +57,18 @@ target_link_libraries(third_party_core INTERFACE
 
 
 # tensorflow_cc.so must be installed in ~/usr/tensorflow
-add_library(tensorflow INTERFACE)
-target_include_directories(tensorflow BEFORE INTERFACE
+add_library(tensorflow SHARED IMPORTED GLOBAL)
+set_property(TARGET tensorflow PROPERTY
+        IMPORTED_LOCATION
+        $ENV{HOME}/usr/tensorflow/lib/libtensorflow_cc.so
+        )
+set_property(TARGET tensorflow PROPERTY
+        INTERFACE_INCLUDE_DIRECTORIES
         $ENV{HOME}/usr/tensorflow/include/tf
         $ENV{HOME}/usr/tensorflow/include/tf/bazel-genfiles
         $ENV{HOME}/usr/tensorflow/include/tf/third_party/eigen3
         ${CMAKE_SOURCE_DIR}/third_party/repos/eigen
         ${CMAKE_SOURCE_DIR}/third_party/install/protobuf
-        )
-target_link_libraries(tensorflow INTERFACE
-        $ENV{HOME}/usr/tensorflow/lib/libtensorflow_cc.so
         )
 
 
