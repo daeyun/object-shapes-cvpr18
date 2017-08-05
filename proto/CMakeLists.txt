@@ -11,3 +11,4 @@ add_library(mvshape_proto SHARED ${PROTO_SRC} ${PROTO_HEADER})
 target_link_libraries(mvshape_proto PUBLIC ${Protobuf_LIBRARIES})
 target_include_directories(mvshape_proto PUBLIC ${PROTOBUF_INCLUDE_DIRS})
 target_include_directories(mvshape_proto PUBLIC ${CMAKE_BINARY_DIR})
+

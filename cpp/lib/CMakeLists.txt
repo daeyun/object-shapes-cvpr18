@@ -55,3 +55,9 @@ target_link_libraries(database mvshape_cpp_core)
 
 add_library(mvshape_helpers STATIC mvshape_helpers.cc)
 target_link_libraries(mvshape_helpers mvshape_cpp_core database tf_utils data_io)
+
+add_library(fssr_utils STATIC fssr_utils.cc)
+target_link_libraries(fssr_utils mvshape_cpp_core mve data_io)
+
+add_library(meshdist STATIC meshdist.cc)
+target_link_libraries(meshdist mvshape_cpp_core mve data_io)

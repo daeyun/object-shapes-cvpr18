@@ -23,7 +23,7 @@ namespace fs = boost::filesystem;
  * @param file
  */
 
-void WriteBytes(const std::string &src, std::ostream *stream);
+void WriteBytes(const void *src, size_t size_bytes, std::ostream *stream);
 
 void WriteBytes(const std::string &src, std::ostream *stream);
 
@@ -74,6 +74,9 @@ void SerializeImages(const std::string &filename,
                      bool append = false);
 
 template<typename T>
+void ReadTensorData(const string &filename, vector<int> *shape, vector<T> *data);
+
+template<typename T>
 void SerializeTensor(const std::string &filename, const void *data, const std::vector<int> &shape);
 
 bool ReadTriangles(const std::string &filename,
@@ -92,6 +95,7 @@ string NamedEmptyTempDir(const string &name);
 bool PrepareDir(const string &filename);
 
 vector<string> RegularFilesInDirectory(const string &dir);
+vector<string> DirectoriesInDirectory(const string &dir);
 
 void RemoveDirIfExists(const string &path);
 

@@ -81,3 +81,27 @@ target_include_directories(egl SYSTEM INTERFACE
         ${EGL_INCLUDE_DIR}
         ${GLESv2_INCLUDE_DIR}
         )
+
+# mve
+
+find_package(PNG REQUIRED)
+find_package(JPEG REQUIRED)
+find_package(TIFF REQUIRED)
+
+add_library(mve INTERFACE)
+target_link_libraries(mve INTERFACE
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/mve/libmve.a
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/dmrecon/libmve_dmrecon.a
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/ogl/libmve_ogl.a
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/sfm/libmve_sfm.a
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/fssr/libmve_fssr.a
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/util/libmve_util.a
+        ${PNG_LIBRARY} ${JPEG_LIBRARY} ${TIFF_LIBRARY}
+        )
+target_include_directories(mve INTERFACE
+        ${CMAKE_SOURCE_DIR}/third_party/repos/mve/libs/
+        ${PNG_INCLUDE_DIR}
+        ${JPEG_INCLUDE_DIR}
+        ${TIFF_INCLUDE_DIR}
+        )
+target_compile_options(mve INTERFACE ${OpenMP_CXX_FLAGS})

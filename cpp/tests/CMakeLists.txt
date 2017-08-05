@@ -29,6 +29,7 @@ add_executable(runAllTests
         random_utils_test.cc
         tf_utils_test.cc
         benchmark_test.cc
+        fssr_utils_test.cc
         test_utils.h
         test_utils.cc
         )
@@ -45,5 +46,6 @@ target_link_libraries(runAllTests
         data_io
         database
         egl_rendering
+        fssr_utils
         )
 

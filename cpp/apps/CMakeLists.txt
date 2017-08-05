@@ -9,3 +9,12 @@ target_link_libraries(train mvshape_cpp_core data_io database tf_utils mvshape_h
 
 add_executable(eval eval.cc)
 target_link_libraries(eval mvshape_cpp_core data_io database tf_utils mvshape_helpers)
+
+add_executable(depth2mesh depth2mesh.cc)
+target_link_libraries(depth2mesh mvshape_cpp_core data_io mve)
+
+add_executable(scene scene.cc)
+target_link_libraries(scene mvshape_cpp_core data_io mve fssr_utils)
+
+add_executable(mesh_distance meshdist.cc)
+target_link_libraries(mesh_distance mvshape_cpp_core data_io mve fssr_utils meshdist)

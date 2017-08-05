@@ -55,3 +55,21 @@ TEST(FileIO, LastPathComponent) {
 
   EXPECT_EQ("/1/2/3/", s);
 }
+
+TEST(FileIO, ReadTensor) {
+  auto filename = Resources::ResourcePath("tf_out/0040_000011400/NOVELCLASS/placeholder_target_depth/0.bin");
+  vector<int> shape;
+  vector<float> data;
+  FileIO::ReadTensorData(filename, &shape, &data);
+
+  EXPECT_EQ(5, shape.size());
+
+  EXPECT_EQ(5, shape[0]);
+  EXPECT_EQ(6, shape[1]);
+  EXPECT_EQ(128, shape[2]);
+  EXPECT_EQ(128, shape[3]);
+  EXPECT_EQ(1, shape[4]);
+
+  EXPECT_TRUE(std::isnan(data[0]));
+  EXPECT_NEAR(5.7774992, data[40000], 1e-5);
+}

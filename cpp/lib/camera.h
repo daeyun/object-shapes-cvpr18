@@ -12,7 +12,7 @@ struct FrustumParams {
   static FrustumParams MakePerspective(double fov_y, double aspect, double z_near, double z_far);
 
   double left = -1;
-  double right = 1;
+  float right = 1;
   double bottom = -1;
   double top = 1;
   double near = 1;
@@ -73,6 +73,7 @@ class Camera {
   Vec3 position_;
   Vec3 lookat_position_;
   Vec3 up_;
+  float modelview_scale_ = 1.0;
   Vec3 viewing_direction_;
   Mat44 view_mat_;
   Mat44 view_mat_inv_;

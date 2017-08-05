@@ -5,9 +5,9 @@
 #pragma once
 
 #ifndef NDEBUG
-#define USE_OMP 0
+#define USE_OMP false
 #else
-#define USE_OMP 1
+#define USE_OMP true
 #endif
 
 #include <iostream>
@@ -16,6 +16,7 @@
 #include <vector>
 #include <array>
 #include <string>
+#include <map>
 #include <memory>
 
 #include <gsl/gsl_assert>
@@ -47,6 +48,7 @@ using std::make_unique;
 using std::make_shared;
 using std::tuple;
 using std::pair;
+using std::map;
 using std::get;
 
 constexpr double kInfinity = std::numeric_limits<double>::infinity();

@@ -23,7 +23,6 @@ def read_tensors(basedir):
         else:
             dtype = np.float32
         arr = np.concatenate([io_utils.read_array_compressed(file, dtype) for file in files], axis=0)
-        print(arr.shape)
 
         tensors[name] = arr
 
@@ -35,5 +34,3 @@ def read_tensors(basedir):
     return ret
 
 
-if __name__ == '__main__':
-    main()

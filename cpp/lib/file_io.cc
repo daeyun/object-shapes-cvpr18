@@ -61,6 +61,10 @@ void WriteBytes(const vector<cv::Mat> &src, std::ostream *stream) {
   }
 }
 
+template void WriteBytes<uint8_t>(const vector<uint8_t> &src, std::ostream *stream);
+template void WriteBytes<int32_t>(const vector<int32_t> &src, std::ostream *stream);
+template void WriteBytes<float>(const vector<float> &src, std::ostream *stream);
+
 template<typename T>
 std::string ToBytes(const vector<T> &values) {
   std::ostringstream stream;
@@ -100,8 +104,37 @@ void DecompressBytes(const void *src, std::string *out) {
 }
 
 template<typename T>
+void ReadTensorData(const string &filename, vector<int> *shape, vector<T> *data) {
+  const string compressed = FileIO::ReadBytes(filename);
+  string serialized;
+  FileIO::DecompressBytes(compressed.data(), &serialized);
+
+  const auto *header = reinterpret_cast<const int32_t *>(serialized.data());
+
+  const int32_t dims = *header;
+  for (int i = 1; i <= dims; ++i) {
+    shape->push_back(*(header + i));
+  }
+
+  size_t size = serialized.size() - sizeof(int32_t) * (dims + 1);
+
+  size_t shape_prod = static_cast<size_t>(
+      std::accumulate(shape->begin(), shape->end(), 1, std::multiplies<>()));
+  size_t num_elements = size / sizeof(T);
+
+  Ensures(shape_prod == num_elements);
+
+  const auto *data_start = reinterpret_cast<const T *>(header + dims + 1);
+  data->reserve(num_elements);
+  data->assign(data_start, data_start + num_elements);
+}
+
+template void ReadTensorData<float>(const string &filename, vector<int> *shape, vector<float> *data);
+template void ReadTensorData<int>(const string &filename, vector<int> *shape, vector<int> *data);
+
+template<typename T>
 void SerializeTensor(const std::string &filename, const void *data, const std::vector<int> &shape) {
-  const int num_bytes = sizeof(T) * std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<int>());
+  const int num_bytes = sizeof(T) * std::accumulate(std::begin(shape), std::end(shape), 1, std::multiplies<>());
 
   Expects(num_bytes > sizeof(T));
 
@@ -155,6 +188,22 @@ vector<string> RegularFilesInDirectory(const string &dir) {
   return paths;
 }
 
+vector<string> DirectoriesInDirectory(const string &dir) {
+  fs::path path(dir);
+  vector<string> paths;
+  if (fs::exists(path) && fs::is_directory(path)) {
+    fs::directory_iterator end_iter;
+    for (fs::directory_iterator dir_iter(path); dir_iter != end_iter; ++dir_iter) {
+      if (fs::is_directory(dir_iter->status())) {
+        paths.push_back(dir_iter->path().string());
+      }
+    }
+  }
+  std::sort(std::begin(paths), std::end(paths));
+
+  return paths;
+}
+
 string WriteIndexFile(const string &dirname, int index) {
   // TODO
   std::ofstream file;
@@ -182,20 +231,15 @@ void SerializeImages(const std::string &filename, const vector<cv::Mat> &images,
 
   int image_type;
   switch (images[0].channels()) {
-    case 1:
-      image_type = CV_32FC1;
+    case 1:image_type = CV_32FC1;
       break;
-    case 2:
-      image_type = CV_32FC2;
+    case 2:image_type = CV_32FC2;
       break;
-    case 3:
-      image_type = CV_32FC3;
+    case 3:image_type = CV_32FC3;
       break;
-    case 4:
-      image_type = CV_32FC4;
+    case 4:image_type = CV_32FC4;
       break;
-    default:
-      throw std::runtime_error("Unexpected number of channels: " + std::to_string(images[0].channels()));
+    default:throw std::runtime_error("Unexpected number of channels: " + std::to_string(images[0].channels()));
   }
 
   vector<cv::Mat> images_float;
