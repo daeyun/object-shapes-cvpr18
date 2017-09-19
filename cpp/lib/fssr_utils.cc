@@ -186,12 +186,35 @@ std::thread ReadSavedTensors(const string &tensor_dir, const vector<string> &sub
 void Depth2Mesh(const string &tensor_dir, const string &out_dir) {
   LOG(INFO) << "Depth2Mesh: " << tensor_dir;
   FileIO::PrepareDir(out_dir);
-  mvshape::concurrency::BatchQueue<fssr::FloatImages> queue(8);
+  mvshape::concurrency::BatchQueue<fssr::FloatImages> queue(10);
   auto thread = fssr::ReadSavedTensors(tensor_dir, {
       "placeholder_target_depth",
       "out_depth",
       "out_silhouette",
   }, &queue);
+
+
+
+  // ***************
+  mv::Examples test_examples;
+  // TODO way too messy
+  Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_vpo/test.bin"), &test_examples);
+  // NOVEL*
+  auto experiment_tag = path(tensor_dir).stem().string();
+  Expects(experiment_tag[0] == 'N');
+
+  vector<int> indices;
+  for (int k = 0; k < test_examples.examples_size(); ++k) {
+    for (const auto& tag : test_examples.examples(k).tags()) {
+      if (mv::Tag_Name((mvshape_dataset::Tag) tag) == experiment_tag) {
+        indices.push_back(k);
+      }
+    }
+  }
+  Ensures(indices.size()==600);
+  // ***************
+
+
 
 #pragma omp parallel if (USE_OMP)
   {
@@ -217,10 +240,7 @@ void Depth2Mesh(const string &tensor_dir, const string &out_dir) {
       if (tensor_dir.find("object_centered") != std::string::npos) {
         // no-op.
       } else if (tensor_dir.find("viewer_centered") != std::string::npos) {
-        mv::Examples test_examples;
-        // TODO
-        Data::LoadExamples(FileIO::FullOutPath("splits/shrec12_examples_opo/test.bin"), &test_examples);
-        const auto &mv_depth = test_examples.examples(images.index).multiview_depth();
+        const auto &mv_depth = test_examples.examples(indices[images.index]).multiview_depth();
         eye = {mv_depth.eye(0), mv_depth.eye(1), mv_depth.eye(2)};
         lookat = {mv_depth.lookat(0), mv_depth.lookat(1), mv_depth.lookat(2)};
         up = {mv_depth.up(0), mv_depth.up(1), mv_depth.up(2)};

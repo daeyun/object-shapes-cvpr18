@@ -1,7 +1,10 @@
 from mvshape import io_utils
 import glob
+import collections
 import numpy as np
 import os.path as path
+import blosc
+from mvshape.proto import dataset_pb2
 
 
 def read_tensors(basedir):
@@ -34,3 +37,38 @@ def read_tensors(basedir):
     return ret
 
 
+def read_split_metadata(split_file, subset_tags=None):
+    """
+
+    :param split_file:
+    :param subset_tags: For example, ['NOVELCLASS', 'NOVELMODEL', 'NOVELVIEW']
+    :return:
+    """
+    with open(split_file, mode='rb') as f:
+        compressed = f.read()
+    decompressed = blosc.decompress(compressed)
+    examples = dataset_pb2.Examples()
+    examples.ParseFromString(decompressed)
+
+    if subset_tags is not None:
+        assert isinstance(subset_tags, (list, tuple))
+        experiment_names = subset_tags
+
+        ret = collections.defaultdict(list)
+
+        for example in examples.examples:
+            tags = tags_from_example(example)
+            for name in experiment_names:
+                if name in tags:
+                    ret[name].append(example)
+    else:
+        ret = list(examples.examples)
+
+    return ret
+
+
+def tags_from_example(pb_example: dataset_pb2.Example):
+    tag_names = []
+    for tag_id in pb_example.tags:
+        tag_names.append(dataset_pb2.Tag.Name(tag_id))
+    return tag_names

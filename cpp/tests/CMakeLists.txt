@@ -30,6 +30,7 @@ add_executable(runAllTests
         tf_utils_test.cc
         benchmark_test.cc
         fssr_utils_test.cc
+        single_batch_loader_test.cc
         test_utils.h
         test_utils.cc
         )
@@ -46,6 +47,7 @@ target_link_libraries(runAllTests
         data_io
         database
         egl_rendering
+        single_batch_loader
         fssr_utils
         )
 

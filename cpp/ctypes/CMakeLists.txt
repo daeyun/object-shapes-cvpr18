@@ -1,0 +1,2 @@
+add_library(single_batch_loader_ctypes SHARED single_batch_loader.cc)
+target_link_libraries(single_batch_loader_ctypes single_batch_loader)

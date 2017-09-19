@@ -110,8 +110,8 @@ void ReadTensorData(const string &filename, vector<int> *shape, vector<T> *data)
   FileIO::DecompressBytes(compressed.data(), &serialized);
 
   const auto *header = reinterpret_cast<const int32_t *>(serialized.data());
-
   const int32_t dims = *header;
+
   for (int i = 1; i <= dims; ++i) {
     shape->push_back(*(header + i));
   }

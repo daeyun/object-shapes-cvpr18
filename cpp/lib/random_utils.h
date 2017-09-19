@@ -27,6 +27,11 @@ static int UniformInt(int n) {
   return dist(Engine());
 }
 
+static double Rand() {
+  std::uniform_real_distribution<double> dist{0, 1};
+  return dist(Engine());
+}
+
 // If n is greater than pool size, some items will be chosen more than once.
 template<class T>
 static void ChooseN(size_t n, std::vector<T> *mutable_pool, std::vector<T> *choices) {

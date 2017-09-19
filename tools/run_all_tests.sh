@@ -36,4 +36,4 @@ elif [ $MODE = "release" ]; then
 fi
 
 
-#./runAllTests
+./runAllTests

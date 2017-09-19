@@ -61,3 +61,22 @@ target_link_libraries(fssr_utils mvshape_cpp_core mve data_io)
 
 add_library(meshdist STATIC meshdist.cc)
 target_link_libraries(meshdist mvshape_cpp_core mve data_io)
+
+
+add_library(single_batch_loader STATIC
+        common.cc
+        file_io.cc file_io.h
+        single_batch_loader.cc single_batch_loader.h
+        benchmark.cc benchmark.h
+        flags.cc flags.h
+        )
+set_property(TARGET single_batch_loader PROPERTY POSITION_INDEPENDENT_CODE ON)
+target_include_directories(single_batch_loader BEFORE PUBLIC
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/cpp/lib
+        ${CMAKE_BINARY_DIR}  # for proto/*
+        ${CMAKE_SOURCE_DIR}/third_party/repos/eigen
+        )
+target_link_libraries(single_batch_loader PUBLIC
+        third_party_core
+        )
