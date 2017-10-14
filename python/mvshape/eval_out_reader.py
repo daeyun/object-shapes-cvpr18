@@ -44,6 +44,12 @@ def read_split_metadata(split_file, subset_tags=None):
     :param subset_tags: For example, ['NOVELCLASS', 'NOVELMODEL', 'NOVELVIEW']
     :return:
     """
+
+    # Make sure cpp implementation is used for parsing protocol buffers. Otherwise it will be too slow.
+    from google.protobuf.internal import api_implementation
+    protobuf_impl_name = api_implementation._default_implementation_type
+    assert 'cpp' == protobuf_impl_name, protobuf_impl_name
+
     with open(split_file, mode='rb') as f:
         compressed = f.read()
     decompressed = blosc.decompress(compressed)

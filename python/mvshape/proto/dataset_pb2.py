@@ -20,9 +20,8 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='dataset.proto',
   package='mvshape_dataset',
   syntax='proto3',
-  serialized_pb=_b('\n\rdataset.proto\x12\x0fmvshape_dataset\"\x97\x03\n\tRendering\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x10\n\x08\x66ilename\x18\x02 \x01(\t\x12\x12\n\nresolution\x18\x03 \x01(\x05\x12\x14\n\x0cnum_channels\x18\x04 \x01(\x05\x12\x10\n\x08set_size\x18\x05 \x01(\x05\x12\x15\n\ris_normalized\x18\x06 \x01(\x08\x12\x37\n\x0erendering_type\x18\x07 \x01(\x0e\x32\x1f.mvshape_dataset.Rendering.Type\x12\x15\n\rmesh_filename\x18\x08 \x01(\t\x12\x11\n\tobject_id\x18\t \x01(\x05\x12\x0b\n\x03\x65ye\x18\n \x03(\x02\x12\n\n\x02up\x18\x0b \x03(\x02\x12\x0e\n\x06lookat\x18\x0c \x03(\x02\x12\x0b\n\x03\x66ov\x18\r \x01(\x02\x12\r\n\x05scale\x18\x0e \x01(\x02\x12\x11\n\tcamera_id\x18\x0f \x01(\x05\x12\x15\n\rcategory_name\x18\x10 \x01(\t\x12\x13\n\x0b\x63\x61tegory_id\x18\x11 \x01(\x05\"2\n\x04Type\x12\t\n\x05\x44\x45PTH\x10\x00\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03RGB\x10\x02\x12\n\n\x06VOXELS\x10\x03\"\xe5\x02\n\x07\x45xample\x12\n\n\x02id\x18\x01 \x01(\x05\x12\"\n\x04tags\x18\x02 \x03(\x0e\x32\x14.mvshape_dataset.Tag\x12\x30\n\x0csingle_depth\x18\x03 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12.\n\nsingle_rgb\x18\x04 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x33\n\x0fmultiview_depth\x18\x05 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x34\n\x10multiview_normal\x18\x06 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x31\n\rmultiview_rgb\x18\x07 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12*\n\x06voxels\x18\x08 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\"\xba\x01\n\x08\x45xamples\x12\x32\n\x0c\x64\x61taset_name\x18\x01 \x01(\x0e\x32\x1c.mvshape_dataset.DatasetName\x12*\n\nsplit_name\x18\x02 \x01(\x0e\x32\x16.mvshape_dataset.Split\x12*\n\x08\x65xamples\x18\x03 \x03(\x0b\x32\x18.mvshape_dataset.Example\x12\"\n\x04tags\x18\x04 \x03(\x0e\x32\x14.mvshape_dataset.Tag*Y\n\x05Split\x12\x08\n\x04TEST\x10\x00\x12\x0e\n\nVALIDATION\x10\x01\x12\x15\n\x11VALIDATION_SUBSET\x10\x02\x12\t\n\x05TRAIN\x10\x03\x12\x14\n\x10TRAIN_VALIDATION\x10\x04*\xbe\x01\n\x03Tag\x12\r\n\tNOVELVIEW\x10\x00\x12\x0e\n\nNOVELMODEL\x10\x01\x12\x0e\n\nNOVELCLASS\x10\x02\x12\x15\n\x11PERSPECTIVE_INPUT\x10\x03\x12\x16\n\x12ORTHOGRAPHIC_INPUT\x10\x04\x12\x16\n\x12PERSPECTIVE_OUTPUT\x10\x05\x12\x17\n\x13ORTHOGRAPHIC_OUTPUT\x10\x06\x12\x13\n\x0fVIEWER_CENTERED\x10\x07\x12\x13\n\x0fOBJECT_CENTERED\x10\x08*\x1a\n\x0b\x44\x61tasetName\x12\x0b\n\x07SHREC12\x10\x00\x62\x06proto3')
+  serialized_pb=_b('\n\rdataset.proto\x12\x0fmvshape_dataset\"\x97\x03\n\tRendering\x12\n\n\x02id\x18\x01 \x01(\x05\x12\x10\n\x08\x66ilename\x18\x02 \x01(\t\x12\x12\n\nresolution\x18\x03 \x01(\x05\x12\x14\n\x0cnum_channels\x18\x04 \x01(\x05\x12\x10\n\x08set_size\x18\x05 \x01(\x05\x12\x15\n\ris_normalized\x18\x06 \x01(\x08\x12\x37\n\x0erendering_type\x18\x07 \x01(\x0e\x32\x1f.mvshape_dataset.Rendering.Type\x12\x15\n\rmesh_filename\x18\x08 \x01(\t\x12\x11\n\tobject_id\x18\t \x01(\x05\x12\x0b\n\x03\x65ye\x18\n \x03(\x02\x12\n\n\x02up\x18\x0b \x03(\x02\x12\x0e\n\x06lookat\x18\x0c \x03(\x02\x12\x0b\n\x03\x66ov\x18\r \x01(\x02\x12\r\n\x05scale\x18\x0e \x01(\x02\x12\x11\n\tcamera_id\x18\x0f \x01(\x05\x12\x15\n\rcategory_name\x18\x10 \x01(\t\x12\x13\n\x0b\x63\x61tegory_id\x18\x11 \x01(\x05\"2\n\x04Type\x12\t\n\x05\x44\x45PTH\x10\x00\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03RGB\x10\x02\x12\n\n\x06VOXELS\x10\x03\"\x9b\x03\n\x07\x45xample\x12\n\n\x02id\x18\x01 \x01(\x05\x12\"\n\x04tags\x18\x02 \x03(\x0e\x32\x14.mvshape_dataset.Tag\x12\x30\n\x0csingle_depth\x18\x03 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12.\n\nsingle_rgb\x18\x04 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x33\n\x0fmultiview_depth\x18\x05 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x34\n\x10multiview_normal\x18\x06 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x31\n\rmultiview_rgb\x18\x07 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12*\n\x06voxels\x18\x08 \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\x12\x34\n\x10single_depth_raw\x18\t \x01(\x0b\x32\x1a.mvshape_dataset.Rendering\"\xba\x01\n\x08\x45xamples\x12\x32\n\x0c\x64\x61taset_name\x18\x01 \x01(\x0e\x32\x1c.mvshape_dataset.DatasetName\x12*\n\nsplit_name\x18\x02 \x01(\x0e\x32\x16.mvshape_dataset.Split\x12*\n\x08\x65xamples\x18\x03 \x03(\x0b\x32\x18.mvshape_dataset.Example\x12\"\n\x04tags\x18\x04 \x03(\x0e\x32\x14.mvshape_dataset.Tag*Y\n\x05Split\x12\x08\n\x04TEST\x10\x00\x12\x0e\n\nVALIDATION\x10\x01\x12\x15\n\x11VALIDATION_SUBSET\x10\x02\x12\t\n\x05TRAIN\x10\x03\x12\x14\n\x10TRAIN_VALIDATION\x10\x04*\xbe\x01\n\x03Tag\x12\r\n\tNOVELVIEW\x10\x00\x12\x0e\n\nNOVELMODEL\x10\x01\x12\x0e\n\nNOVELCLASS\x10\x02\x12\x15\n\x11PERSPECTIVE_INPUT\x10\x03\x12\x16\n\x12ORTHOGRAPHIC_INPUT\x10\x04\x12\x16\n\x12PERSPECTIVE_OUTPUT\x10\x05\x12\x17\n\x13ORTHOGRAPHIC_OUTPUT\x10\x06\x12\x13\n\x0fVIEWER_CENTERED\x10\x07\x12\x13\n\x0fOBJECT_CENTERED\x10\x08*\x1a\n\x0b\x44\x61tasetName\x12\x0b\n\x07SHREC12\x10\x00\x62\x06proto3')
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 _SPLIT = _descriptor.EnumDescriptor(
   name='Split',
@@ -53,8 +52,8 @@ _SPLIT = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=993,
-  serialized_end=1082,
+  serialized_start=1047,
+  serialized_end=1136,
 )
 _sym_db.RegisterEnumDescriptor(_SPLIT)
 
@@ -104,8 +103,8 @@ _TAG = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1085,
-  serialized_end=1275,
+  serialized_start=1139,
+  serialized_end=1329,
 )
 _sym_db.RegisterEnumDescriptor(_TAG)
 
@@ -123,8 +122,8 @@ _DATASETNAME = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=1277,
-  serialized_end=1303,
+  serialized_start=1331,
+  serialized_end=1357,
 )
 _sym_db.RegisterEnumDescriptor(_DATASETNAME)
 
@@ -384,6 +383,13 @@ _EXAMPLE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='single_depth_raw', full_name='mvshape_dataset.Example.single_depth_raw', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -397,7 +403,7 @@ _EXAMPLE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=445,
-  serialized_end=802,
+  serialized_end=856,
 )
 
 
@@ -448,8 +454,8 @@ _EXAMPLES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=805,
-  serialized_end=991,
+  serialized_start=859,
+  serialized_end=1045,
 )
 
 _RENDERING.fields_by_name['rendering_type'].enum_type = _RENDERING_TYPE
@@ -461,6 +467,7 @@ _EXAMPLE.fields_by_name['multiview_depth'].message_type = _RENDERING
 _EXAMPLE.fields_by_name['multiview_normal'].message_type = _RENDERING
 _EXAMPLE.fields_by_name['multiview_rgb'].message_type = _RENDERING
 _EXAMPLE.fields_by_name['voxels'].message_type = _RENDERING
+_EXAMPLE.fields_by_name['single_depth_raw'].message_type = _RENDERING
 _EXAMPLES.fields_by_name['dataset_name'].enum_type = _DATASETNAME
 _EXAMPLES.fields_by_name['split_name'].enum_type = _SPLIT
 _EXAMPLES.fields_by_name['examples'].message_type = _EXAMPLE
@@ -471,6 +478,7 @@ DESCRIPTOR.message_types_by_name['Examples'] = _EXAMPLES
 DESCRIPTOR.enum_types_by_name['Split'] = _SPLIT
 DESCRIPTOR.enum_types_by_name['Tag'] = _TAG
 DESCRIPTOR.enum_types_by_name['DatasetName'] = _DATASETNAME
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Rendering = _reflection.GeneratedProtocolMessageType('Rendering', (_message.Message,), dict(
   DESCRIPTOR = _RENDERING,

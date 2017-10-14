@@ -103,33 +103,29 @@ def read_mvei_image(filename):
     return image
 
 
-def save_as_mve_views(scene_dir, depth_images, silhouettes, ortho_cameras: typing.Sequence[camera.OrthographicCamera]):
+def save_as_mve_views(scene_dir, masked_depth_images: np.ndarray, ortho_cameras: typing.Sequence[camera.OrthographicCamera], cam_scale=1.0):
     """
     Write depth images as MVE views to be used as input. Currently only supports orthographic cameras.
 
     :param scene_dir: Output files are saved in a subdirectory called `views`. Created if not exists.
     :param depth_images: An array of shape (num_views, height, width).
     :param ortho_cameras: Orthographic cameras.
+    :param cam_scale: Scale factor after camera transformation.
     :return:
     """
     views_dir = path.join(scene_dir, 'views')
     io_utils.ensure_dir_exists(views_dir)
-    assert depth_images.ndim == 3
-    assert silhouettes.ndim == 3
+    assert masked_depth_images.ndim == 3
 
-    if 2 * silhouettes.shape[0] == depth_images.shape[0]:
-        silhouettes = np.concatenate([silhouettes, silhouettes[:, :, ::-1]], axis=0)
-
-    assert silhouettes.shape[0] == depth_images.shape[0]
-
-    masked_depth_images = depth_images.copy()
-    masked_depth_images[~silhouettes] = np.nan
+    depth_images = masked_depth_images.copy()
+    depth_images[np.isnan(depth_images)] = 0
 
     for i in range(len(masked_depth_images)):
         masked_depth_image = masked_depth_images[i]
+        unscaled_masked_depth_image = masked_depth_image / cam_scale
         depth_image = depth_images[i]
         view_dirname = path.join(views_dir, 'view_{0:04d}.mve'.format(i))
-        write_mvei_image(path.join(view_dirname, 'depth-L0.mvei'), masked_depth_image)
+        write_mvei_image(path.join(view_dirname, 'depth-L0.mvei'), unscaled_masked_depth_image)
         sp_misc.imsave(path.join(view_dirname, 'original.png'), depth_image)
 
         config = configparser.ConfigParser()
@@ -149,10 +145,10 @@ def save_as_mve_views(scene_dir, depth_images, silhouettes, ortho_cameras: typin
         }
 
         config['orthographic_camera'] = {
-            'top': cam.trbl[0],
-            'right': cam.trbl[1],
-            'bottom': cam.trbl[2],
-            'left': cam.trbl[3],
+            'top': cam.trbl[0] / cam_scale,
+            'right': cam.trbl[1] / cam_scale,
+            'bottom': cam.trbl[2] / cam_scale,
+            'left': cam.trbl[3] / cam_scale,
         }
 
         with open(path.join(view_dirname, 'meta.ini'), 'w') as f:
@@ -231,7 +227,6 @@ def fssr_from_scene_dir(scene_dir, scale=1):
 # newer version
 def fssr_pcl_files(pcl_ply_files, scale=1):
     executable = path.join(_mve_root, 'apps/fssrecon/fssrecon')
-    print(executable)
     assert path.isfile(executable), '{} does not exist. Run build.sh.'.format(executable)
 
     input_files = []
@@ -255,7 +250,6 @@ def fssr_pcl_files(pcl_ply_files, scale=1):
 # deprecated
 def fssr_pcl(pcl_ply_file, scale=1):
     executable = path.join(_mve_root, 'apps/fssrecon/fssrecon')
-    print(executable)
     assert path.isfile(executable), '{} does not exist. Run build.sh.'.format(executable)
 
     prefix, ext = path.splitext(pcl_ply_file)

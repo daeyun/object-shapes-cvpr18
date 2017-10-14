@@ -1,5 +1,4 @@
 import numpy as np
-import ensure
 import peewee
 import hashlib
 from playhouse.sqlite_ext import SqliteExtDatabase
@@ -169,7 +168,6 @@ def sha256(objs):
     return h.hexdigest()
 
 
-@ensure.ensure_annotations
 def camera_hash(camera: Camera) -> str:
     """
     64 hexadecimal characters.

@@ -13,12 +13,18 @@ import struct
 from os import path
 
 import numpy as np
+import scipy.misc
+import glob
 import plyfile
 import stl
 import ujson
 import blosc
+import PIL.Image
 
 from dshin import log
+
+# Specific to mvshape project
+resources_dir = path.realpath(path.join(path.dirname(__file__), '../../resources'))
 
 
 def read_mesh(filename):
@@ -201,6 +207,36 @@ def stringify_float_arrays(arr_list, precision=6):
 def temp_filename(dirname='/tmp', prefix='', suffix=''):
     temp_name = next(tempfile._get_candidate_names())
     return path.join(dirname, prefix + temp_name + suffix)
+
+
+def save_simple_points_ply(out_filename, points, text=False):
+    assert points.shape[1] == 3
+    assert points.ndim == 2
+
+    dirname = path.dirname(out_filename)
+    if not path.isdir(dirname):
+        os.makedirs(dirname)
+        log.info('mkdir -p {}'.format(dirname))
+
+    xyz_nxyz = points
+    vertex = np.core.records.fromarrays(xyz_nxyz.T, names='x, y, z',
+                                        formats='f4, f4, f4')
+
+    el = plyfile.PlyElement.describe(vertex, 'vertex')
+    ply = plyfile.PlyData([el], text=text)
+    ply.write(out_filename)
+
+    # Replace \r\n with \n.
+    with open(out_filename, 'rb') as f:
+        content = f.read()
+    beginning = content[:128]
+    rest = content[128:]
+    beginning = beginning.replace(b'ply\r\n', b'ply\n')
+
+    with open(out_filename, 'wb') as f:
+        f.write(beginning + rest)
+
+    return ply
 
 
 def save_points_ply(out_filename, points, normals, values, confidence, text=False, scale_normals_by_confidence=True):
@@ -407,11 +443,13 @@ class DirectoryVersionManager(object):
         return prev_version
 
 
-def ensure_dir_exists(dirname):
+def ensure_dir_exists(dirname, log_mkdir=True):
     dirname = path.realpath(path.expanduser(dirname))
     if not path.isdir(dirname):
         os.makedirs(dirname)
-        log.info('mkdir -p {}'.format(dirname))
+        if log_mkdir:
+            log.info('mkdir -p {}'.format(dirname))
+    return dirname
 
 
 def dir_child_basenames(dirpath):
@@ -467,3 +505,34 @@ def read_array_compressed(filename, dtype=np.float32):
         compressed = f.read()
     decompressed = blosc.decompress(compressed)
     return bytes_to_array(decompressed, dtype=dtype)
+
+
+def read_png(filename):
+    """
+    :param filename:
+    :return: ndarray of shape (height, width, channels). 0 to 255.
+    the last channel is alpha. Also 0 to 255.
+    """
+    image = scipy.misc.imread(filename)
+
+    if image.dtype != np.uint8:
+        raise NotImplementedError('Unrecognized image format: {}'.format(image.dtype))
+
+    return image
+
+
+def make_resources_path(p: str):
+    if p.startswith('/'):
+        p = p[1:]
+    assert len(p) > 0
+    ret = path.join(resources_dir, p)
+    return ret
+
+
+def save_png(image: np.ndarray, filename: str):
+    assert image.ndim == 3
+    assert image.shape[2] in (3, 4)
+    assert filename.endswith('.png'), 'failed filename sanity check: {}'.format(filename)
+    assert image.dtype == np.uint8
+    im = PIL.Image.fromarray(image)
+    im.save(filename, optimize=True)

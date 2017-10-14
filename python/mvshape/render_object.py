@@ -9,9 +9,10 @@ from mvshape import io_utils
 import numpy as np
 
 from numpy.ctypeslib import ndpointer
+import mvshape
 
-proj_root = path.join(path.dirname(__file__), '..', '..')
-lib_filename = path.realpath(path.join(proj_root, 'bazel-bin', 'cpp', 'ctypes', 'render_object.so'))
+proj_root = mvshape.proj_root
+lib_filename = mvshape.make_bin_path('cpp/ctypes/librender_object.so')
 assert path.isfile(lib_filename), lib_filename
 
 l = cdll.LoadLibrary(lib_filename)
