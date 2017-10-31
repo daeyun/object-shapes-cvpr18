@@ -124,7 +124,7 @@ class Camera(BaseModel):
     lookat = Vec3Field()
     is_orthographic = peewee.BooleanField(default=True)
     fov = peewee.FloatField(null=True)
-    scale = peewee.FloatField(null=True)
+    scale = peewee.FloatField(null=True)  # Scale of the frustum's top, left, bottom, right parameters.
 
 
 class RenderingType(BaseModel):

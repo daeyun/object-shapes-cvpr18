@@ -27,10 +27,11 @@ add_executable(runAllTests
         camera_test.cc
         multiprocessing_test.cc
         random_utils_test.cc
-        tf_utils_test.cc
+#        tf_utils_test.cc
         benchmark_test.cc
         fssr_utils_test.cc
         single_batch_loader_test.cc
+        voxel_test.cc
         test_utils.h
         test_utils.cc
         )
@@ -41,13 +42,14 @@ target_link_libraries(runAllTests
         ${GTEST_LIBRARIES}
         test_main
         mvshape_cpp_core
-        tensorflow
-        tf_utils
+#        tensorflow
+#        tf_utils
         mvshape_proto
         data_io
         database
         egl_rendering
         single_batch_loader
         fssr_utils
+        voxel
         )
 

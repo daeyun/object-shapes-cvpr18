@@ -82,6 +82,10 @@ void SerializeTensor(const std::string &filename, const void *data, const std::v
 bool ReadTriangles(const std::string &filename,
                    const std::function<void(const std::array<std::array<float, 3>, 3> &)> &triangle_handler);
 
+bool ReadFacesAndVertices(const std::string &filename,
+                          std::vector<std::array<int, 3>> *faces,
+                          std::vector<std::array<float, 3>> *vertices);
+
 vector<array<array<float, 3>, 3>> ReadTriangles(const std::string &filename);
 
 string WriteIndexFile(const string &dirname, int index);

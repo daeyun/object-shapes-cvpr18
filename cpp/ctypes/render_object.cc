@@ -9,26 +9,26 @@
 #include <glog/logging.h>
 
 #include "cpp/lib/egl_rendering.h"
-#include "cpp/lib/camera.h"
-#include "cpp/lib/flags.h"
+
+DECLARE_string(resources_dir);
 
 // Interface for Python ctypes.
 extern "C" {
 void depth_and_normal_map(const float *vertices, const size_t len_vertices,
                           const float *eye, const float *center, const float *up,
                           const int w, const int h,
-                          const char* path_to_resources,
+                          const char *path_to_resources,
                           float *out_depth, float *out_normal);
 }
 
 void depth_and_normal_map(const float *vertices, const size_t len_vertices,
                           const float *eye, const float *center, const float *up,
                           const int w, const int h,
-                          const char* path_to_resources,
+                          const char *path_to_resources,
                           float *out_depth, float *out_normal) {
   Expects(len_vertices % 9 == 0);
 
-  if (path_to_resources!=nullptr) {
+  if (path_to_resources != nullptr) {
     FLAGS_resources_dir = std::string(path_to_resources);
   }
 

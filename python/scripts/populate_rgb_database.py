@@ -1,4 +1,5 @@
 import shutil
+import os
 import numpy.linalg as la
 import math
 import random
@@ -57,6 +58,7 @@ def get_db_camera(cam: camera.OrthographicCamera, fov=None) -> dbm.Camera:
                 up=cam.up_vector,
                 lookat=np.array((0, 0, 0), dtype=np.float64),
                 is_orthographic=True,
+                scale=1.75,
             )
         else:
             db_cam = dbm.Camera(
@@ -110,32 +112,67 @@ synset_name_pairs = [('02691156', 'aeroplane'),
                      ('03211117', 'tvmonitor')]
 synset_name_map = dict(synset_name_pairs)
 
+is_subset = True
+
 
 def main():
+    syn_images_dir = '/data/mvshape/shapenetcore/single_rgb_128/'
+    shapenetcore_dir = '/data/shapenetcore/ShapeNetCore.v1/'
+
     log.info('Getting all filenames.')
-    syndirs = sorted(glob.glob('/data/render_for_cnn/data/syn_images_cropped_bkg_overlaid/*'))
-    random.seed(42)
+    syndirs = sorted(glob.glob(path.join(syn_images_dir, '*')))
     filenames = []
     for syndir in syndirs:
         modeldirs = sorted(glob.glob(path.join(syndir, '*')))
-        random.shuffle(modeldirs)
+        if is_subset:
+            modeldirs = modeldirs[:10]
         for modeldir in modeldirs:
-            renderings = sorted(glob.glob(path.join(modeldir, '*')))
+            renderings = sorted(glob.glob(path.join(modeldir, '*.png')))
+            if is_subset:
+                renderings = renderings[:7]
             filenames.extend(renderings)
+
+    # random.seed(42)
+    # if not is_subset:
+    #     random.shuffle(filenames)
+    #     filenames = filenames[:1000000]
+
+    random.seed(42)
 
     log.info('{} files'.format(len(filenames)))
 
-    shapenetcore_dir = '/data/shapenetcore/ShapeNetCore.v1/'
-    syn_images_dir = '/data/render_for_cnn/data/syn_images/'
-    target_dir = '/tmp/dev_out'
-    sqlite_file_path = join(target_dir, 'shapenetcore.sqlite')
+
+    # TODO
+    target_dir = '/data/mvshape/database'
+
+    if is_subset:
+        sqlite_file_path = join(target_dir, 'shapenetcore_subset.sqlite')
+    else:
+        sqlite_file_path = join(target_dir, 'shapenetcore.sqlite')
     output_cam_distance_from_origin = 2
 
     log.info('Setting up output directory.')
     # set up debugging directory.
-    if path.isdir(target_dir):
-        shutil.rmtree(target_dir)
+    if path.isfile(sqlite_file_path):
+        os.remove(sqlite_file_path)
     io_utils.ensure_dir_exists(target_dir)
+
+    # used for making sure there is no duplicate.
+    duplicate_name_check_set = set()
+
+    log.info('Checking for duplicates. And making sure params.txt exists.')
+    for i, filename in enumerate(filenames):
+        m = re.search(r'single_rgb_128/(.*?)/(.*?)/[^_]+?_[^_]+?_v(\d{4,})_a', filename)
+        synset = m.group(1)
+        model_name = m.group(2)
+        v = m.group(3)
+        image_num = int(v)
+        vc_rendering_name = '{}_{}_{:04d}'.format(synset, model_name, image_num)
+        if vc_rendering_name in duplicate_name_check_set:
+            print('duplicate found: ', (filename, vc_rendering_name))
+        duplicate_name_check_set.add(vc_rendering_name)
+        params_filename = join(syn_images_dir, synset, model_name, 'params.txt')
+        assert path.isfile(params_filename)
 
     # Create the database
     dbm.init(sqlite_file_path)
@@ -191,12 +228,14 @@ def main():
         start_time = time.time()
         count = 0
         for i, filename in enumerate(filenames):
-            m = re.search(r'syn_images_cropped_bkg_overlaid/(.*?)/(.*?)/[^_]+?_[^_]+?_v(\d{4,})_a', filename)
+            m = re.search(r'single_rgb_128/(.*?)/(.*?)/[^_]+?_[^_]+?_v(\d{4,})_a', filename)
             synset = m.group(1)
             model_name = m.group(2)
             if model_name not in db_object_map:
                 mesh_filename = join(shapenetcore_dir, synset, model_name, 'model.obj')
                 assert path.isfile(mesh_filename)
+
+                mesh_filename_suffix = join('/mesh/shapenetcore/v1', '/'.join(mesh_filename.split('/')[-3:]))
 
                 db_category = synset_db_category_map[synset]
                 # Must be unique.
@@ -206,9 +245,11 @@ def main():
                     dataset=datasets['shapenetcore'],
                     num_vertices=0,  # Not needed for now. Easy to fill in later.
                     num_faces=0,
-                    mesh_filename=mesh_filename,
+                    mesh_filename=mesh_filename_suffix,
                 )
                 db_object_map[model_name] = db_object
+
+                oc_rendering_name = '{}_{}'.format(synset, model_name)
 
                 assert model_name not in db_object_centered_renderings
                 db_object_centered_renderings[model_name] = {
@@ -216,7 +257,8 @@ def main():
                         type=rendering_types['rgb'],
                         camera=db_oc_output_cam,
                         object=db_object,
-                        filename='/shapenetcore/mv20_rgb_128/{}.bin'.format(model_name),
+                        # JPG
+                        filename='/shapenetcore/mv20_rgb_128/{}.bin'.format(oc_rendering_name),
                         resolution=128,
                         num_channels=3,
                         set_size=20,
@@ -227,7 +269,7 @@ def main():
                         camera=db_oc_output_cam,
                         object=db_object,
                         # Since there is only one gt rendering per model, their id is the same as the model name.
-                        filename='/shapenetcore/mv20_depth_128/{}.bin'.format(model_name),
+                        filename='/shapenetcore/mv20_depth_128/{}.bin'.format(oc_rendering_name),
                         resolution=128,
                         num_channels=1,
                         set_size=20,
@@ -237,7 +279,7 @@ def main():
                         type=rendering_types['normal'],
                         camera=db_oc_output_cam,
                         object=db_object,
-                        filename='/shapenetcore/mv20_normal_128/{}.bin'.format(model_name),
+                        filename='/shapenetcore/mv20_normal_128/{}.bin'.format(oc_rendering_name),
                         resolution=128,
                         num_channels=3,
                         set_size=20,
@@ -247,8 +289,8 @@ def main():
                         type=rendering_types['voxels'],
                         camera=db_oc_output_cam,
                         object=db_object,
-                        filename='/shapenetcore/voxels_48/{}.bin'.format(model_name),
-                        resolution=48,
+                        filename='/shapenetcore/voxels_32/{}.bin'.format(oc_rendering_name),
+                        resolution=32,
                         num_channels=1,
                         set_size=1,
                         is_normalized=False,
@@ -268,12 +310,9 @@ def main():
 
         start_time = time.time()
 
-        # used for making sure there is no duplicate.
-        duplicate_name_check_set = set()
-
         log.info('Processing rgb images.')
         for i, filename in enumerate(filenames):
-            m = re.search(r'syn_images_cropped_bkg_overlaid/(.*?)/(.*?)/[^_]+?_[^_]+?_v(\d{4,})_a', filename)
+            m = re.search(r'single_rgb_128/(.*?)/(.*?)/[^_]+?_[^_]+?_v(\d{4,})_a', filename)
             synset = m.group(1)
             model_name = m.group(2)
             v = m.group(3)
@@ -290,6 +329,14 @@ def main():
             input_cam = camera.OrthographicCamera.from_Rt(Rt, wh=(128, 128), is_world_to_cam=True)
             # 49.1343 degrees is the default fov in blender.
             db_input_cam = get_db_camera(input_cam, fov=49.1343)
+
+            input_cam_depth_xyz = (input_cam.pos / la.norm(input_cam.pos)) * 1.5
+            input_cam_depth_Rt = transforms.lookat_matrix(cam_xyz=input_cam_depth_xyz,
+                                                          obj_xyz=(0, 0, 0),
+                                                          up=input_cam.up_vector)
+            input_cam_depth = camera.OrthographicCamera.from_Rt(input_cam_depth_Rt, wh=(128, 128), is_world_to_cam=True)
+            db_input_cam_depth = get_db_camera(input_cam_depth, fov=49.1343)
+
             output_cam_xyz = (input_cam.pos / la.norm(input_cam.pos)) * output_cam_distance_from_origin
             output_Rt = transforms.lookat_matrix(cam_xyz=output_cam_xyz,
                                                  obj_xyz=(0, 0, 0),
@@ -300,10 +347,7 @@ def main():
             # ---
             db_object = db_object_map[model_name]
 
-            # TODO
-            vc_rendering_name = '{}_{:04d}'.format(model_name, i)
-            assert vc_rendering_name not in duplicate_name_check_set
-            duplicate_name_check_set.add(vc_rendering_name)
+            vc_rendering_name = '{}_{}_{:04d}'.format(synset, model_name, image_num)
 
             # Viewer centered renderings.
             # --------------------------------
@@ -314,7 +358,7 @@ def main():
                 camera=db_input_cam,
                 object=db_object,
                 # This should already exist.
-                filename='/shapenetcore/single_rgb_128/{}.bin'.format(vc_rendering_name),
+                filename='/shapenetcore/single_rgb_128/{}.png'.format(vc_rendering_name),
                 resolution=128,
                 num_channels=1,
                 set_size=1,
@@ -323,7 +367,7 @@ def main():
 
             db_object_rendering_input_depth = dbm.ObjectRendering.create(
                 type=rendering_types['depth'],
-                camera=db_input_cam,
+                camera=db_input_cam_depth,
                 object=db_object,
                 filename='/shapenetcore/single_depth_128/{}.bin'.format(vc_rendering_name),
                 resolution=128,
@@ -369,8 +413,8 @@ def main():
                 type=rendering_types['voxels'],
                 camera=db_vc_output_cam,
                 object=db_object,
-                filename='/shapenetcore/voxels_48/{}.bin'.format(vc_rendering_name),
-                resolution=48,
+                filename='/shapenetcore/voxels_32/{}.bin'.format(vc_rendering_name),
+                resolution=32,
                 num_channels=1,
                 set_size=1,
                 is_normalized=False,
@@ -404,7 +448,7 @@ def main():
             dbm.ExampleObjectRendering.create(example=example_object_centered, rendering=db_object_centered_renderings[model_name]['output_depth'])
             dbm.ExampleObjectRendering.create(example=example_object_centered, rendering=db_object_centered_renderings[model_name]['output_normal'])
             dbm.ExampleObjectRendering.create(example=example_object_centered, rendering=db_object_centered_renderings[model_name]['output_rgb'])
-            dbm.ExampleObjectRendering.create(example=example_object_centered, rendering=db_object_centered_renderings[model_name]['output_depth'])
+            dbm.ExampleObjectRendering.create(example=example_object_centered, rendering=db_object_centered_renderings[model_name]['output_voxels'])
             dbm.ExampleDataset.create(example=example_object_centered, dataset=datasets['shapenetcore'])
             dbm.ExampleSplit.create(example=example_object_centered, split=splits['train'])
             dbm.ExampleTag.create(example=example_object_centered, tag=tags['real_world'])
@@ -427,7 +471,7 @@ def main():
 
 
 
-    # path_suffix = re.search(r'syn_images_cropped_bkg_overlaid.*', filename).group(0)
+    # path_suffix = re.search(r'syn_images.*', filename).group(0)
     # target_file = join(target_dir, 'render_for_cnn/data/', path_suffix)
     # print(target_file)
 

@@ -1,3 +1,5 @@
+#define GSL_THROW_ON_CONTRACT_VIOLATION
+
 #include <stdio.h>
 
 #include <gtest/gtest.h>

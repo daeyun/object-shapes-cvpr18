@@ -37,3 +37,5 @@ fi
 
 
 ./runAllTests
+
+echo "OK"

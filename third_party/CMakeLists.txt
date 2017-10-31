@@ -26,6 +26,11 @@ find_package(Eigen3 REQUIRED
         PATHS ${CMAKE_SOURCE_DIR}/third_party/repos/eigen
         )
 
+add_library(cpp_gsl INTERFACE)
+target_include_directories(cpp_gsl INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/repos/cpp_gsl/include
+        )
+
 add_library(third_party_core INTERFACE)
 target_include_directories(third_party_core INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}/repos/cpp_gsl/include
@@ -105,3 +110,13 @@ target_include_directories(mve INTERFACE
         ${TIFF_INCLUDE_DIR}
         )
 target_compile_options(mve INTERFACE ${OpenMP_CXX_FLAGS})
+
+
+# polygon2voxel
+add_library(polygon2voxel STATIC
+        ${CMAKE_SOURCE_DIR}/third_party/src/polygon2voxel/polygon2voxel_double.cc
+        ${CMAKE_SOURCE_DIR}/third_party/src/polygon2voxel/polygon2voxel_double.h
+        )
+target_include_directories(polygon2voxel INTERFACE
+        ${CMAKE_CURRENT_LIST_DIR}/src/polygon2voxel/
+        )

@@ -45,21 +45,25 @@ enum Tag {
   ORTHOGRAPHIC_OUTPUT = 6;
   VIEWER_CENTERED = 7;
   OBJECT_CENTERED = 8;
+  REAL_WORLD = 9;
 }
 
 enum DatasetName {
   SHREC12 = 0;
+  SHAPENETCORE = 1;
 }
 
+// TODO: Change the names of single_depth and single_depth_raw.
 message Example {
   int32 id = 1;
   repeated Tag tags = 2;
-  Rendering single_depth = 3;
+  Rendering single_depth = 3;  // Normalized
   Rendering single_rgb = 4;
   Rendering multiview_depth = 5;
   Rendering multiview_normal = 6;
   Rendering multiview_rgb = 7;
   Rendering voxels = 8;
+  Rendering single_depth_raw = 9;  // same as `single_depth` except it is not normalized and in higher resolution.
 }
 
 message Examples {

@@ -1,10 +1,8 @@
-import os
 import gc
 import threading
 import queue
 import time
 from mvshape import benchmark
-from mvshape.benchmark import timeit
 from os import path
 from mvshape import io_utils
 import sys
@@ -53,36 +51,51 @@ def recursive_train_setter(module, is_training: bool):
         raise RuntimeError('unknown module {}'.format(module))
 
 
+is_rgb = True
+is_shrec12 = False
+
+
 def main():
-    batch_size = 150
-    learning_rate = 0.0005
+    if is_rgb:
+        batch_size = 150
+        learning_rate = 0.0002
+    else:
+        batch_size = 150
+        learning_rate = 0.0005
     silhouette_loss_weight = 0.2
     num_views = 6
 
     # specific to shrec12 for now.
-    shrec12_target_depth_offset = dataset.shrec12_target_depth_offset
+    if is_shrec12:
+        target_depth_offset = dataset.shrec12_target_depth_offset
+    else:
+        target_depth_offset = dataset.shapenetcore_target_depth_offset
 
     # globals
     current_epoch = 0
 
-    # Initialize dataset.
-    loader = dataset.ExampleLoader('/data/mvshape/out/splits/shrec12_examples_vpo/train.bin', ['single_depth', 'multiview_depth', ], batch_size=batch_size, shuffle=True)
-    eval_loader = dataset.ExampleLoader('/data/mvshape/out/splits/shrec12_examples_vpo/test.bin', ['single_depth', 'multiview_depth', ], batch_size=batch_size, subset_tags=['NOVELVIEW', 'NOVELMODEL'], shuffle=False)
-
-    # Total number of examples.
-    total_num_examples = len(loader.examples)
-    print('training dataset size: {}'.format(total_num_examples))
-
-    # Initialize network.
-    models = {
-        'encoder': encoder.ResNetEncoder(torchvision.models.resnet.Bottleneck, [2, 3, 2], input_channel=2),
-        'decoder_depth': decoder.SingleBranchDecoder(in_size=2048, out_channels=1),
-        'decoder_silhouette': decoder.SingleBranchDecoder(in_size=2048, out_channels=1),
-        'h_shared': [],
-        'h_depth_front': [],
-        'h_depth_back': [],
-        'h_silhouette': [],
-    }
+    if is_rgb:
+        # Initialize network.
+        models = {
+            'encoder': encoder.ResNetEncoder(torchvision.models.resnet.Bottleneck, [4, 7, 4], input_channel=3 if is_rgb else 2),
+            'decoder_depth': decoder.SingleBranchDecoder(in_size=2048, out_channels=1),
+            'decoder_silhouette': decoder.SingleBranchDecoder(in_size=2048, out_channels=1),
+            'h_shared': [],
+            'h_depth_front': [],
+            'h_depth_back': [],
+            'h_silhouette': [],
+        }
+    else:
+        # Initialize network.
+        models = {
+            'encoder': encoder.ResNetEncoder(torchvision.models.resnet.Bottleneck, [2, 3, 2], input_channel=3 if is_rgb else 2),
+            'decoder_depth': decoder.SingleBranchDecoder(in_size=2048, out_channels=1),
+            'decoder_silhouette': decoder.SingleBranchDecoder(in_size=2048, out_channels=1),
+            'h_shared': [],
+            'h_depth_front': [],
+            'h_depth_back': [],
+            'h_silhouette': [],
+        }
 
     # output of model is
     # ((b, 1, 128, 128), (b, 1, 128, 128))
@@ -122,6 +135,23 @@ def main():
 
     print('model is ready.')
 
+
+    # Initialize dataset.
+    #####################################
+    # loader = dataset.ExampleLoader('/data/mvshape/out/splits/shrec12_examples_vpo/train.bin', ['single_depth', 'multiview_depth', ], batch_size=batch_size, shuffle=True)
+
+    # todo
+    # loader = dataset.ExampleLoader2(path.join(dataset.base, 'out/splits/shapenetcore_examples_vpo/subset_examples.cbor'), ['input_rgb', 'target_depth', ], batch_size=batch_size, shuffle=True)
+    loader = dataset.ExampleLoader2(path.join(dataset.base, 'out/splits/shapenetcore_examples_vpo/all_examples.cbor'), ['input_rgb', 'target_depth', ], batch_size=batch_size, shuffle=True)
+
+    # eval_loader = dataset.ExampleLoader('/data/mvshape/out/splits/shrec12_examples_vpo/test.bin', ['single_depth', 'multiview_depth', ], batch_size=batch_size, subset_tags=['NOVELVIEW', 'NOVELMODEL'], shuffle=False)
+
+    # Total number of examples.
+    total_num_examples = loader.total_num_examples
+    print('training dataset size: {}'.format(total_num_examples))
+    #####################################
+
+
     data_queue = queue.Queue(maxsize=1)
 
     def prepare_data(next_batch):
@@ -135,14 +165,18 @@ def main():
 
         # prepare data
         # modify in-place.
-        in_depth = tensors['single_depth'].copy()
-        in_silhouette = np.isfinite(in_depth)
-        in_depth[~in_silhouette] = 0
-        in_silhouette = in_silhouette.astype(np.float32)
-        in_image = np.concatenate([in_depth, in_silhouette], axis=1)
-        assert (in_image.ndim == 4 and in_image.shape[1] == 2), in_image.shape
+        if is_rgb:
+            in_rgb = tensors['input_rgb'].astype(np.float32) / 255.0
+            in_image = in_rgb
+        else:
+            in_depth = tensors['input_depth'].copy()
+            in_silhouette = np.isfinite(in_depth)
+            in_depth[~in_silhouette] = 0
+            in_silhouette = in_silhouette.astype(np.float32)
+            in_image = np.concatenate([in_depth, in_silhouette], axis=1)
+            assert (in_image.ndim == 4 and in_image.shape[1] == 2), in_image.shape
 
-        target_depth = tensors['multiview_depth'].copy()
+        target_depth = tensors['target_depth'].copy()
         target_silhouette = np.isfinite(target_depth)
         target_depth[~target_silhouette] = 0
         target_silhouette = target_silhouette.astype(np.float32)  # 0 or 1
@@ -158,15 +192,17 @@ def main():
         target_silhouette = target_silhouette[:, ::2]
         # (b, 3, 1, 128, 128)
 
-        categories = np.array(shrec12_convert_category_ids([example.single_depth.category_id - 1 for example in examples]), dtype=np.int64)
+        # categories = np.array(shrec12_convert_category_ids([example.single_depth.category_id - 1 for example in examples]), dtype=np.int64)
 
-        return {
+        ret = {
             'in_image': in_image,
-            'in_depth': in_depth,
             'target_depth': target_depth,
             'target_silhouette': target_silhouette,
-            'categories': categories,
         }
+
+        # 'categories': categories,
+
+        return ret
 
     def convert_data_to_cuda(data_dict: dict):
         assert isinstance(data_dict, dict)
@@ -180,7 +216,7 @@ def main():
         return accuracy, num_correct, num_total
 
     def compute_masked_depth_loss(out_depth: Variable, target_depth: Variable, target_silhouette: Variable):
-        target_depth_with_offset = (target_depth + shrec12_target_depth_offset) * target_silhouette
+        target_depth_with_offset = (target_depth + target_depth_offset) * target_silhouette
         area = target_silhouette.float().sum(dim=2, keepdim=True).sum(dim=3, keepdim=True) + 1e-3
 
         assert len(out_depth.size()) == 4
@@ -235,7 +271,7 @@ def main():
         total_loss_sum = 0.0
         current_num_examples = 0
         current_num_batches = 0
-        this_dataset_total_num_examples = len(data_loader.examples)
+        this_dataset_total_num_examples = data_loader.total_num_examples
 
         eval_metrics = {'silhouette_iou': 0.0}
 
@@ -248,7 +284,13 @@ def main():
 
             # Check if end of epoch.
             if batch_data is None:
-                if not is_training:
+                if is_training:
+                    filename = path.join(dataset.base, 'out/pytorch/rgb_mv6_vpo/models0_{:04}.pth'.format(current_epoch))
+                    io_utils.ensure_dir_exists(path.dirname(filename))
+                    with open(filename, 'wb') as f:
+                        torch.save(models, f)
+                        print('saved {}'.format(filename))
+                else:
                     if current_epoch > 0 and current_epoch % 5 == 0:
                         print('saving..')
                         with open('/tmp/eval.npz', 'wb') as f:
@@ -257,22 +299,19 @@ def main():
                             concatenated_silhouette = np.concatenate(all_outputs['out_silhouette'], axis=0)
 
                             ## important
-                            concatenated_front -= shrec12_target_depth_offset
-                            concatenated_back -= shrec12_target_depth_offset
+                            ## TODO
+                            # concatenated_front -= shrec12_target_depth_offset
+                            # concatenated_back -= shrec12_target_depth_offset
 
                             np.savez_compressed(f, out_front=concatenated_front, out_back=concatenated_back, out_silhouette=concatenated_silhouette)
                             print('saved /tmp/eval.npz')
-                        filename = '/data/mvshape/out/pytorch/mv6_vpo/models5_{:04}.pth'.format(current_epoch)
-                        io_utils.ensure_dir_exists(path.dirname(filename))
-                        with open(filename, 'wb') as f:
-                            torch.save(models, f)
-                            print('saved {}'.format(filename))
                 break
 
             optimizer.zero_grad()
 
             # shared by all views
-            h = models['encoder'](batch_data['in_image'])
+            model_input_image = batch_data['in_image']
+            h = models['encoder'](model_input_image)
 
             total_loss = None
             for i in range(num_views // 2):
@@ -339,8 +378,8 @@ def main():
         train_loss, eval_metrics = process_epoch(loader, is_training=True)
         print('Train loss: {:.3}, iou: {:.3}'.format(train_loss, eval_metrics['silhouette_iou']))
 
-        eval_loss, eval_metrics = process_epoch(eval_loader, is_training=False)
-        print('Eval loss: {:.3}, iou: {:.3}'.format(eval_loss, eval_metrics['silhouette_iou']))
+        # eval_loss, eval_metrics = process_epoch(eval_loader, is_training=False)
+        # print('Eval loss: {:.3}, iou: {:.3}'.format(eval_loss, eval_metrics['silhouette_iou']))
 
         current_epoch += 1
 

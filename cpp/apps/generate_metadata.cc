@@ -18,9 +18,15 @@ int main(int argc, char *argv[]) {
   google::ParseCommandLineFlags(&argc, &argv, true);
   FLAGS_logtostderr = 1;
 
-  mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
-                              "splits/shrec12_examples_vpo/");
+//  mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
+//                              "splits/shrec12_examples_vpo/");
+//
+//  mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_opo",
+//                              "splits/shrec12_examples_opo/");
 
-  mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_opo",
-                              "splits/shrec12_examples_opo/");
+  mvshape::Data::SaveExamples("database/shapenetcore.sqlite", "shapenetcore_examples_vpo",
+                              "splits/shapenetcore_examples_vpo/");
+
+  mvshape::Data::SaveExamples("database/shapenetcore.sqlite", "shapenetcore_examples_opo",
+                              "splits/shapenetcore_examples_opo/");
 }

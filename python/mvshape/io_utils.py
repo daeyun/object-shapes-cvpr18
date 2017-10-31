@@ -20,6 +20,7 @@ import stl
 import ujson
 import blosc
 import PIL.Image
+import pyassimp
 
 from dshin import log
 
@@ -446,7 +447,8 @@ class DirectoryVersionManager(object):
 def ensure_dir_exists(dirname, log_mkdir=True):
     dirname = path.realpath(path.expanduser(dirname))
     if not path.isdir(dirname):
-        os.makedirs(dirname)
+        # `exist_ok` in case of race condition.
+        os.makedirs(dirname, exist_ok=True)
         if log_mkdir:
             log.info('mkdir -p {}'.format(dirname))
     return dirname
@@ -468,6 +470,13 @@ def dir_child_basenames(dirpath):
 def is_dir_empty(dirpath):
     dirnames, filenames = dir_child_basenames(dirpath)
     return len(dirnames) == 0 and len(filenames) == 0
+
+
+def array_to_bytes(arr: np.ndarray):
+    shape = arr.shape
+    ndim = arr.ndim
+    ret = struct.pack('i', ndim) + struct.pack('i' * ndim, *shape) + arr.tobytes(order='C')
+    return ret
 
 
 def bytes_to_array(s: bytes, dtype=np.float32):
@@ -507,7 +516,28 @@ def read_array_compressed(filename, dtype=np.float32):
     return bytes_to_array(decompressed, dtype=dtype)
 
 
+def save_array_compressed(filename, arr: np.ndarray):
+    encoded = array_to_bytes(arr)
+    compressed = blosc.compress(encoded, arr.dtype.itemsize, clevel=9, shuffle=True, cname='lz4hc')
+    with open(filename, mode='wb') as f:
+        f.write(compressed)
+
+
 def read_png(filename):
+    """
+    :param filename:
+    :return: ndarray of shape (height, width, channels). 0 to 255.
+    the last channel is alpha. Also 0 to 255.
+    """
+    image = scipy.misc.imread(filename)
+
+    if image.dtype != np.uint8:
+        raise NotImplementedError('Unrecognized image format: {}'.format(image.dtype))
+
+    return image
+
+
+def read_jpg(filename):
     """
     :param filename:
     :return: ndarray of shape (height, width, channels). 0 to 255.
@@ -536,3 +566,26 @@ def save_png(image: np.ndarray, filename: str):
     assert image.dtype == np.uint8
     im = PIL.Image.fromarray(image)
     im.save(filename, optimize=True)
+
+
+def read_obj(filename):
+    scene = pyassimp.load(filename)
+
+    vertices = []
+    faces = []
+    vertex_count = 0
+    for m in scene.meshes:
+        f = m.faces
+        v = m.vertices
+        faces.append(f + vertex_count)
+        vertices.append(v)
+        num_vertices = v.shape[0]
+        vertex_count += num_vertices
+    faces = np.concatenate(faces, axis=0)
+    vertices = np.concatenate(vertices, axis=0)
+
+    fv = {'v': vertices, 'f': faces}
+
+    pyassimp.release(scene)
+
+    return fv

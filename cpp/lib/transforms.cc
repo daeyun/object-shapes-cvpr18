@@ -62,8 +62,7 @@ void RescaleAndRecenter(const cv::Mat &image, tuple<int, int> height_width, int 
   int h = max_y - min_y + 1;
   int w = max_x - min_x + 1;
 
-  auto center = tuple<int,
-                      int> {min_y + h * 0.5, min_x + w * 0.5};
+  auto center = tuple<int, int> {min_y + h * 0.5, min_x + w * 0.5};
 
   int ystart = get<0>(center) - h / 2;
   int xstart = get<1>(center) - w / 2;

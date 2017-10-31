@@ -89,6 +89,7 @@ void CompressBytes(const void *src, int size_bytes, const char *compressor, int 
                                            src, &(*out)[0], out->size(), compressor, 0, 1);
   out->resize(static_cast<size_t>(compressed_size));
   if (compressed_size <= 0) {
+    LOG(ERROR) << "Compression failed.";
     throw std::runtime_error("Compression failed.");
   }
 }
@@ -99,6 +100,7 @@ void DecompressBytes(const void *src, std::string *out) {
   out->resize(nbytes);
   int decompressed_size = blosc_decompress_ctx(src, &(*out)[0], out->size(), 1);
   if (decompressed_size <= 0) {
+    LOG(ERROR) << "Decompression failed.";
     throw std::runtime_error("Decompression failed.");
   }
 }
@@ -146,7 +148,7 @@ void SerializeTensor(const std::string &filename, const void *data, const std::v
   string encoded = stream.str();
 
   std::string compressed;
-  CompressBytes(encoded.data(), static_cast<int>(encoded.size()), "lz4hc", 6, sizeof(float), &compressed);
+  CompressBytes(encoded.data(), static_cast<int>(encoded.size()), "lz4hc", 9, sizeof(float), &compressed);
   void *out_ptr = &compressed[0];
   auto out_size = compressed.size();
 
@@ -220,6 +222,7 @@ template void SerializeTensor<float>(const std::string &filename, const void *da
 template void SerializeTensor<double>(const std::string &filename, const void *data, const std::vector<int> &shape);
 template void SerializeTensor<char>(const std::string &filename, const void *data, const std::vector<int> &shape);
 template void SerializeTensor<int>(const std::string &filename, const void *data, const std::vector<int> &shape);
+template void SerializeTensor<uint8_t>(const std::string &filename, const void *data, const std::vector<int> &shape);
 
 void SerializeImages(const std::string &filename, const vector<cv::Mat> &images, bool compress, bool append) {
   for (const auto &image : images) {
@@ -278,7 +281,7 @@ void SerializeImages(const std::string &filename, const vector<cv::Mat> &images,
   size_t out_size;
   std::string compressed;
   if (compress) {
-    CompressBytes(encoded.data(), static_cast<int>(encoded.size()), "lz4hc", 6, sizeof(float), &compressed);
+    CompressBytes(encoded.data(), static_cast<int>(encoded.size()), "lz4hc", 9, sizeof(float), &compressed);
     out_ptr = &compressed[0];
     out_size = compressed.size();
   } else {
@@ -307,13 +310,16 @@ void SerializeImages(const std::string &filename, const vector<cv::Mat> &images,
 bool ReadTriangles(const std::string &filename,
                    const std::function<void(const std::array<std::array<float, 3>, 3> &)> &triangle_handler) {
   LOG(INFO) << "Importing " << filename;
-  Expects(boost::filesystem::exists(filename));
+  if (!boost::filesystem::exists(filename)) {
+    LOG(ERROR) << filename << " does not exist";
+    throw std::runtime_error("file not found");
+  }
 
   Assimp::Importer importer;
   const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate);
 
   if (!scene) {
-    LOG(ERROR) << importer.GetErrorString();
+    LOG(ERROR) << "ERROR in " << filename << ": " << importer.GetErrorString();
     return false;
   }
 
@@ -338,6 +344,56 @@ bool ReadTriangles(const std::string &filename,
                         std::array<float, 3>{c.x, c.y, c.z}});
       ++triangle_count;
     }
+  }
+
+  if (triangle_count <= 0) {
+    LOG(WARNING) << "No triangles found in mesh file.";
+  }
+
+  return true;
+}
+
+bool ReadFacesAndVertices(const std::string &filename,
+                          std::vector<std::array<int, 3>> *faces,
+                          std::vector<std::array<float, 3>> *vertices) {
+  LOG(INFO) << "Importing " << filename;
+  if (!boost::filesystem::exists(filename)) {
+    LOG(ERROR) << filename << " does not exist";
+    throw std::runtime_error("file not found");
+  }
+
+  Assimp::Importer importer;
+  const aiScene *scene = importer.ReadFile(filename, aiProcess_Triangulate);
+
+  if (!scene) {
+    LOG(ERROR) << "ERROR in " << filename << ": " << importer.GetErrorString();
+    return false;
+  }
+
+  int triangle_count = 0;
+  int face_offset = 0;
+  for (int i = 0; i < scene->mNumMeshes; ++i) {
+    const aiMesh *mesh = scene->mMeshes[i];
+    for (int j = 0; j < mesh->mNumVertices; ++j) {
+      auto vertex = mesh->mVertices[j];
+      vertices->push_back({vertex.x, vertex.y, vertex.z});
+    }
+    for (int j = 0; j < mesh->mNumFaces; ++j) {
+      auto face = mesh->mFaces[j];
+      Expects(face.mNumIndices == 3);
+      for (int k = 0; k < 3; ++k) {
+        if (face.mIndices[k] >= mesh->mNumVertices) {
+          LOG(WARNING) << "Invalid vertex index found. Skipping.";
+          continue;
+        }
+      }
+      faces->push_back({static_cast<int>(face_offset + face.mIndices[0]),
+                        static_cast<int>(face_offset + face.mIndices[1]),
+                        static_cast<int>(face_offset + face.mIndices[2])});
+      ++triangle_count;
+    }
+    face_offset += mesh->mNumVertices;
+    Ensures(face_offset == vertices->size());
   }
 
   if (triangle_count <= 0) {

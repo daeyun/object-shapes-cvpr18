@@ -23,11 +23,13 @@ TEST_F(OutputTest, GenerateDatasetSubset) {
   Data::GenerateDataset();
 }
 
+#if 0
 TEST_F(OutputTest, GenerateMetadataSubset) {
   int count = mvshape::Data::SaveExamples("database/shrec12.sqlite", "shrec12_examples_vpo",
                                           "splits/shrec12_examples_vpo/");
   EXPECT_EQ(20, count);
 }
+#endif
 
 TEST(LoadMetadata, Subset) {
   mvshape_dataset::Examples examples;

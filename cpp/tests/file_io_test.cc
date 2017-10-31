@@ -41,6 +41,22 @@ TEST(FileIO, ReadTriangleMesh) {
   EXPECT_EQ(triangles.size(), 8376);
 }
 
+TEST(FileIO, ReadFacesAndVertices) {
+  // From ShapenetCore.v1 class 03001627.
+  auto filename = Resources::ResourcePath("objects/1a74a83fa6d24b3cacd67ce2c72c02e/model.obj");
+  std::vector<std::array<int, 3>> faces;
+  std::vector<std::array<float, 3>> vertices;
+  FileIO::ReadFacesAndVertices(filename, &faces, &vertices);
+  EXPECT_EQ(8376, faces.size());
+  EXPECT_EQ(25128, vertices.size());
+  EXPECT_EQ(25125, faces[faces.size() - 1][0]);
+  EXPECT_EQ(25126, faces[faces.size() - 1][1]);
+  EXPECT_EQ(25127, faces[faces.size() - 1][2]);
+  EXPECT_FLOAT_EQ(0.183476, vertices[vertices.size() - 1][0]);
+  EXPECT_FLOAT_EQ(-0.35791701, vertices[vertices.size() - 1][1]);
+  EXPECT_FLOAT_EQ(0.220948, vertices[vertices.size() - 1][2]);
+}
+
 TEST(FileIO, ListFilesInDir) {
   auto dirname = Resources::ResourcePath("objects/1a74a83fa6d24b3cacd67ce2c72c02e/");
   auto files = FileIO::RegularFilesInDirectory(dirname);

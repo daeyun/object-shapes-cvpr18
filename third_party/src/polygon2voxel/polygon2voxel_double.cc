@@ -1,8 +1,11 @@
 // (c) 2009, Dirk-Jan Kroon, BSD 2-Clause
+// https://www.mathworks.com/matlabcentral/fileexchange/24086-polygon2voxel
 #include <math.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+#include "polygon2voxel_double.h"
 
 #define min(X,Y) ((X) < (Y) ? (X) : (Y)) 
 #define max(X,Y) ((X) > (Y) ? (X) : (Y))

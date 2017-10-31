@@ -32,3 +32,5 @@ elif [ $MODE = "release" ]; then
     cmake -H. -Bcmake-build-release -Dtest=OFF -DDEBUG=OFF -DCMAKE_BUILD_TYPE=Release
     make -Ccmake-build-release -j 12
 fi
+
+echo "OK"
