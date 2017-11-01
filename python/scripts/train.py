@@ -12,8 +12,11 @@ from mvshape.models import encoder
 from mvshape.models import decoder
 import torchvision
 import torch
+import textwrap
 from torch import optim
+from dshin import log
 from torch import nn
+import argparse
 from torch.autograd import Variable
 from mvshape.data import dataset
 
@@ -51,19 +54,39 @@ def recursive_train_setter(module, is_training: bool):
         raise RuntimeError('unknown module {}'.format(module))
 
 
+parser = argparse.ArgumentParser(description='training')
+parser.add_argument('--experiment', dest='experiment', type=str)
+parser.add_argument('--is_debug', dest='is_debug', type=bool)
+args = parser.parse_args()
+
 is_rgb = True
 is_shrec12 = False
+# experiment_name = 'vpo'
+# experiment_name = 'opo'
+experiment_name = args.experiment.strip()
+is_debug = args.is_debug
+
+# sanity checks
+assert experiment_name in ('opo', 'vpo'), experiment_name
 
 
 def main():
     if is_rgb:
-        batch_size = 150
+        batch_size = 130
         learning_rate = 0.0002
     else:
         batch_size = 150
         learning_rate = 0.0005
     silhouette_loss_weight = 0.2
     num_views = 6
+
+    log.info(textwrap.dedent('''
+    experiment_name: {},
+    is_shrec12: {},
+    is_rgb: {},
+    batch_size: {},
+    num_views: {},
+    '''.format(experiment_name, is_shrec12, is_rgb, batch_size, num_views)))
 
     # specific to shrec12 for now.
     if is_shrec12:
@@ -73,6 +96,8 @@ def main():
 
     # globals
     current_epoch = 0
+    global global_step
+    global_step = 0
 
     if is_rgb:
         # Initialize network.
@@ -133,8 +158,7 @@ def main():
     assert len(all_params) > 0
     optimizer = optim.Adam(all_params, lr=learning_rate)
 
-    print('model is ready.')
-
+    log.info('model is ready.')
 
     # Initialize dataset.
     #####################################
@@ -142,15 +166,18 @@ def main():
 
     # todo
     # loader = dataset.ExampleLoader2(path.join(dataset.base, 'out/splits/shapenetcore_examples_vpo/subset_examples.cbor'), ['input_rgb', 'target_depth', ], batch_size=batch_size, shuffle=True)
-    loader = dataset.ExampleLoader2(path.join(dataset.base, 'out/splits/shapenetcore_examples_vpo/all_examples.cbor'), ['input_rgb', 'target_depth', ], batch_size=batch_size, shuffle=True)
+
+    if is_debug:
+        loader = dataset.ExampleLoader2(path.join(dataset.base, 'out/splits/shapenetcore_examples_{}/subset_examples.cbor'.format(experiment_name)), ['input_rgb', 'target_depth', ], batch_size=batch_size, shuffle=True)
+    else:
+        loader = dataset.ExampleLoader2(path.join(dataset.base, 'out/splits/shapenetcore_examples_{}/all_examples.cbor'.format(experiment_name)), ['input_rgb', 'target_depth', ], batch_size=batch_size, shuffle=True)
 
     # eval_loader = dataset.ExampleLoader('/data/mvshape/out/splits/shrec12_examples_vpo/test.bin', ['single_depth', 'multiview_depth', ], batch_size=batch_size, subset_tags=['NOVELVIEW', 'NOVELMODEL'], shuffle=False)
 
     # Total number of examples.
     total_num_examples = loader.total_num_examples
-    print('training dataset size: {}'.format(total_num_examples))
+    log.info('training dataset size: {}'.format(total_num_examples))
     #####################################
-
 
     data_queue = queue.Queue(maxsize=1)
 
@@ -250,7 +277,7 @@ def main():
             next_batch = data_loader.next()
             if next_batch is None or (is_training and (len(next_batch[0]) != batch_size)):
                 # if (data_loader.current_batch_index > 3) or next_batch is None or (is_training and (len(next_batch[0]) != batch_size)):
-                print('{}: end of epoch {}'.format('Train' if is_training else 'Eval', current_epoch))
+                log.info('{}: end of epoch {}'.format('Train' if is_training else 'Eval', current_epoch))
                 data_loader.reset()
                 data_queue.put(None, block=True)
                 break
@@ -264,6 +291,7 @@ def main():
         gc.collect()
 
     def process_epoch(data_loader, is_training: bool):
+
         recursive_train_setter(models, is_training)
         gc.collect()
 
@@ -278,21 +306,42 @@ def main():
         thread = threading.Thread(target=data_queue_worker, args=[data_loader, is_training], daemon=True)
         thread.start()
 
+        def save_model():
+            filename = path.join(dataset.base, 'out/pytorch/rgb_mv6_{}/models0_{:05}_{:07}_{:08}.pth'.format(experiment_name, current_epoch, current_num_batches, global_step))
+            io_utils.ensure_dir_exists(path.dirname(filename))
+            with open(filename, 'wb') as f:
+                log.info('Saving.. {}'.format(filename))
+                torch.save(models, f)
+                log.info('Saved.')
+
+        global waiting_times
+        waiting_times = []
+
+        def print_status():
+            global waiting_times
+            print('', flush=True)
+            log.info('      {:08d} of {:08d}. io block: {:.4f}'.format(int(current_num_examples/batch_size), int(total_num_examples/batch_size), np.median(waiting_times), np.mean(waiting_times)))
+            waiting_times = []
+
         while True:
+
             start_time = time.time()
             batch_data = data_queue.get(block=True)
+            waiting_times.append(time.time() - start_time)
+
+            global global_step
+            if global_step % 500 == 0:
+                print_status()
+            if global_step % 2500 == 0:
+                save_model()
 
             # Check if end of epoch.
             if batch_data is None:
                 if is_training:
-                    filename = path.join(dataset.base, 'out/pytorch/rgb_mv6_vpo/models0_{:04}.pth'.format(current_epoch))
-                    io_utils.ensure_dir_exists(path.dirname(filename))
-                    with open(filename, 'wb') as f:
-                        torch.save(models, f)
-                        print('saved {}'.format(filename))
+                    save_model()
                 else:
                     if current_epoch > 0 and current_epoch % 5 == 0:
-                        print('saving..')
+                        log.info('saving..')
                         with open('/tmp/eval.npz', 'wb') as f:
                             concatenated_front = np.concatenate(all_outputs['out_depth_front'], axis=0)
                             concatenated_back = np.concatenate(all_outputs['out_depth_back'], axis=0)
@@ -304,7 +353,7 @@ def main():
                             # concatenated_back -= shrec12_target_depth_offset
 
                             np.savez_compressed(f, out_front=concatenated_front, out_back=concatenated_back, out_silhouette=concatenated_silhouette)
-                            print('saved /tmp/eval.npz')
+                            log.info('saved /tmp/eval.npz')
                 break
 
             optimizer.zero_grad()
@@ -365,18 +414,22 @@ def main():
             total_loss_sum += (to_python_scalar(total_loss) * batch_data['in_image'].size(0)) / this_dataset_total_num_examples
             current_num_examples += batch_data['in_image'].size(0)
             current_num_batches += 1
+            global_step += 1
             print('.', end='', flush=True)
             benchmark.print_elapsed()
 
-        print('\n{} {} examples'.format('trained' if is_training else 'evaluated', current_num_examples))
+        log.info('\n{} {} examples'.format('trained' if is_training else 'evaluated', current_num_examples))
         return total_loss_sum, eval_metrics
 
     # Main loop
     while True:
-        print('# Epoch {}'.format(current_epoch))
+        log.info('# Starting epoch {}'.format(current_epoch))
 
         train_loss, eval_metrics = process_epoch(loader, is_training=True)
-        print('Train loss: {:.3}, iou: {:.3}'.format(train_loss, eval_metrics['silhouette_iou']))
+
+        log.info('==============================================================')
+        log.info('Train loss: {:.3}, iou: {:.3}'.format(train_loss, eval_metrics['silhouette_iou']))
+        log.info('==============================================================')
 
         # eval_loss, eval_metrics = process_epoch(eval_loader, is_training=False)
         # print('Eval loss: {:.3}, iou: {:.3}'.format(eval_loss, eval_metrics['silhouette_iou']))

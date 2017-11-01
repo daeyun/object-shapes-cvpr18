@@ -150,7 +150,7 @@ uint32_t ReadSingleBatch(const vector<string> &filenames, const vector<int> &sha
   }
 
   auto start = mvshape_lite::MicroSecondsSinceEpoch();
-#pragma omp parallel for schedule(guided)
+#pragma omp parallel for schedule(dynamic) num_threads(8)
   for (int i = 0; i < batch_size; ++i) {
     const auto &filename = filenames[i];
 
