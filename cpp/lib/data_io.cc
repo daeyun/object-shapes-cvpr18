@@ -91,6 +91,7 @@ void RenderImages(const vector<const mv::Rendering *> &renderables) {
 
       // TODO: for debugging. Quit if there's a problem reading the mesh.
       if (triangles->empty()) {
+        LOG(ERROR) << "Empty triangles";
         throw std::runtime_error("");
       }
 
@@ -340,15 +341,20 @@ void Voxelize(const vector<const mv::Rendering *> &renderables) {
     Vec3 up{renderable->up(0), renderable->up(1), renderable->up(2)};
     Vec3 lookat{renderable->lookat(0), renderable->lookat(1), renderable->lookat(2)};
 
-    if (renderable->fov() < 1) {
+//    if (renderable->fov() < 1) {
       FrustumParams frustum;
       frustum.near = kNear;
       frustum.far = kFar;
       camera = make_unique<OrthographicCamera>(eye, lookat, up, frustum);
-    } else {
-      LOG(ERROR) << "Not implemented";
-      throw std::runtime_error("Not implemented");
-    }
+// TODO############################################  find out what this was
+//    } else {
+//      LOG(INFO) << renderable->fov();
+//      LOG(INFO) << renderable->resolution();
+//      LOG(INFO) << renderable->set_size();
+//      LOG(INFO) << Data::ToString(*renderable);
+//      LOG(ERROR) << "Not implemented";
+//      throw std::runtime_error("Not implemented");
+//    }
 
     // 1 is the only value that makes sense in our setting.
     if (renderable->set_size() != 1) {
@@ -393,7 +399,6 @@ void Voxelize(const vector<const mv::Rendering *> &renderables) {
 
 void GenerateDataset() {
   vector<mv::Rendering> renderables;
-
 
   // TODO: make this generic or accept flags
 //  int count = Data::ReadRenderables("database/shrec12.sqlite", "shrec12_renderings", &renderables);

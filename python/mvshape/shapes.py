@@ -15,7 +15,7 @@ import collections
 
 import mvshape
 from mvshape import io_utils
-from mvshape import log
+from dshin import log
 from mvshape import camera_utils
 from mvshape.proto import dataset_pb2
 from dshin import geom2d
@@ -89,8 +89,8 @@ class MVshape(object):
     def fssr_recon(self, out_dir):
         ply_files = self._depth_meshes(out_dir=out_dir)
 
-        fssr_recon_file = mve.fssr_pcl_files(ply_files, scale=0.3)
-        fssr_recon_clean_file = mve.meshclean(fssr_recon_file, threshold=0.25)
+        fssr_recon_file = mve.fssr_pcl_files(ply_files, scale=0.6)
+        fssr_recon_clean_file = mve.meshclean(fssr_recon_file, threshold=0.1)
 
         recon_dir = io_utils.ensure_dir_exists(path.join(out_dir, 'recon'))
 

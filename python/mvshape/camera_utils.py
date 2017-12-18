@@ -6,9 +6,9 @@ import numpy.linalg as la
 
 
 def make_six_views(camera_xyz, object_xyz, up):
-    camera_xyz = np.array(camera_xyz).ravel()
-    object_xyz = np.array(object_xyz).ravel()
-    up = np.array(up).ravel()
+    camera_xyz = np.array(camera_xyz).ravel().astype(np.float64)
+    object_xyz = np.array(object_xyz).ravel().astype(np.float64)
+    up = np.array(up).ravel().astype(np.float64)
 
     viewing_dir = object_xyz - camera_xyz
     viewing_dir /= la.norm(viewing_dir)

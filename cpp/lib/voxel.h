@@ -42,6 +42,39 @@ class VoxelGrid {
     }
   }
 
+  int count_ones() {
+    int ret = 0;
+    for (const auto &item : data_) {
+      if (item) {
+        ret++;
+      }
+    }
+    return ret;
+  }
+
+  float filled_ratio() {
+    return static_cast<float>(count_ones()) / static_cast<float>(nx_ * ny_ * nz_);
+  }
+
+  std::vector<int> shape() {
+    return {nx_, ny_, nz_};
+  }
+
+  float iou(const VoxelGrid &other) {
+    int intersection_count = 0;
+    int union_count = 0;
+    for (int i = 0; i < size(); ++i) {
+      if (at(i) && other.at(i)) {
+        intersection_count++;
+      }
+      if (at(i) || other.at(i)) {
+        union_count++;
+      }
+    }
+
+    return static_cast<float>(intersection_count) / static_cast<float>(union_count);
+  }
+
   int size() const { return nx_ * ny_ * nz_; }
 
   int nx() const { return nx_; }
@@ -86,7 +119,7 @@ void Voxelize(const vector<array<int, 3>> &faces,
 void SweepXYZAndMarkVisible(VoxelGrid *voxels);
 bool RayBackTracing(const array<int, 3> &starting_pos, const array<float, 3> &direction,
                     const VoxelGrid &voxels, VoxelGrid *directional_output);
-int VoxFill(VoxelGrid* voxels, int window_size);
+int VoxFill(VoxelGrid *voxels, int window_size);
 
 }
 }

@@ -90,11 +90,11 @@ def read_off(filename):
 
     faces = faces[:, 1:]
 
-    if faces.min() != 0:
-        print('faces.min() != 0', file=sys.stderr)
+    # if faces.min() != 0:
+    #     print('faces.min() != 0', file=sys.stderr)
 
     if faces.max() != vertices.shape[0] - 1:
-        print('faces.max() != vertices.shape[0]-1', file=sys.stderr)
+        # print('faces.max() != vertices.shape[0]-1', file=sys.stderr)
         assert faces.max() < vertices.shape[0]
 
     assert vertices.shape[0] == num_vertices
@@ -261,7 +261,7 @@ def save_points_ply(out_filename, points, normals, values, confidence, text=Fals
 
     if scale_normals_by_confidence:
         normals = normals.copy() * confidence
-    xyz_nxyz = np.concatenate([points, normals, values, confidence], axis=1)
+    xyz_nxyz = np.concatenate([points, normals, values, confidence], axis=1).astype(np.float32)
     vertex = np.core.records.fromarrays(xyz_nxyz.T, names='x, y, z, nx, ny, nz, value, confidence',
                                         formats='f4, f4, f4, f4, f4, f4, f4, f4')
 

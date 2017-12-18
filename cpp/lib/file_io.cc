@@ -323,6 +323,9 @@ bool ReadTriangles(const std::string &filename,
     return false;
   }
 
+  // TODO: there seems to be a problem in reading binary ply files. this is a hack to detect parsing error.
+  const float kMaxVertexValue = 1e7;
+
   int triangle_count = 0;
   for (int i = 0; i < scene->mNumMeshes; ++i) {
     const aiMesh *mesh = scene->mMeshes[i];
@@ -339,6 +342,10 @@ bool ReadTriangles(const std::string &filename,
       auto a = mesh->mVertices[face.mIndices[0]];
       auto b = mesh->mVertices[face.mIndices[1]];
       auto c = mesh->mVertices[face.mIndices[2]];
+      if (std::abs(a.x) > kMaxVertexValue || std::abs(a.y) > kMaxVertexValue || std::abs(a.z) > kMaxVertexValue) {
+        LOG(ERROR) << "vertex value above threshold: " << a.x << ", " << a.y << ", " << a.z;
+        throw std::runtime_error("");
+      }
       triangle_handler({std::array<float, 3>{a.x, a.y, a.z},
                         std::array<float, 3>{b.x, b.y, b.z},
                         std::array<float, 3>{c.x, c.y, c.z}});
@@ -370,12 +377,20 @@ bool ReadFacesAndVertices(const std::string &filename,
     return false;
   }
 
+  // TODO: there seems to be a problem in reading binary ply files. this is a hack to detect parsing error.
+  const float kMaxVertexValue = 1e7;
+
   int triangle_count = 0;
   int face_offset = 0;
   for (int i = 0; i < scene->mNumMeshes; ++i) {
     const aiMesh *mesh = scene->mMeshes[i];
     for (int j = 0; j < mesh->mNumVertices; ++j) {
       auto vertex = mesh->mVertices[j];
+      if (std::abs(vertex.x) > kMaxVertexValue || std::abs(vertex.y) > kMaxVertexValue
+          || std::abs(vertex.z) > kMaxVertexValue) {
+        LOG(ERROR) << "vertex value above threshold: " << vertex.x << ", " << vertex.y << ", " << vertex.z;
+        throw std::runtime_error("");
+      }
       vertices->push_back({vertex.x, vertex.y, vertex.z});
     }
     for (int j = 0; j < mesh->mNumFaces; ++j) {

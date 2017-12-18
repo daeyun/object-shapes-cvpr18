@@ -120,7 +120,7 @@ def main():
                             '--mesh2={}'.format(recon_file),
                         ])
                         # print(stderr)
-                        m = re.search(r'MEAN RMS: ([0-9\.]+)', stderr)
+                        m = re.search(r'MEAN RMS: ([0-9\.e\-]+)', stderr)
                         if m is None:
                             print(stdout)
                             print(stderr)

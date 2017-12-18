@@ -4,7 +4,7 @@ from sys import platform
 import shutil
 from ctypes import cdll
 from os import path
-from mvshape import log
+from dshin import log
 from mvshape import io_utils
 import numpy as np
 

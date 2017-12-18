@@ -26,3 +26,6 @@ target_link_libraries(mesh_distance mvshape_cpp_core data_io mve fssr_utils mesh
 # TODO
 #add_executable(recon recon.cc)
 #target_link_libraries(recon mvshape_cpp_core data_io mve fssr_utils meshdist)
+
+add_executable(voxel_iou voxel_iou.cc)
+target_link_libraries(voxel_iou mvshape_cpp_core data_io)

@@ -47,10 +47,16 @@ void ReadPNG(const std::string &filename, std::string *png_bytes) {
   FILE *fp = fopen(filename.data(), "rb");
 
   png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
-  if (!png) throw std::runtime_error("Error in png_create_read_struct");
+  if (!png) {
+    png_destroy_read_struct(&png, nullptr, nullptr);
+    throw std::runtime_error("Error in png_create_read_struct");
+  }
 
   png_infop info = png_create_info_struct(png);
-  if (!info) throw std::runtime_error("Error in png_create_info_struct");
+  if (!info) {
+    png_destroy_read_struct(&png, &info, nullptr);
+    throw std::runtime_error("Error in png_create_info_struct");
+  }
 
   if (setjmp(png_jmpbuf(png))) throw std::runtime_error("Error in setjmp(png_jmpbuf(png))");
 
@@ -88,6 +94,9 @@ void ReadPNG(const std::string &filename, std::string *png_bytes) {
 
   fclose(fp);
   free(row_pointers);
+  png_destroy_read_struct(&png, &info, nullptr);
+  png = nullptr;
+  info = nullptr;
 
   // `image_buffer` contains h*w*3 bytes.
   // transpose to 3*h*w and write `png_bytes`.
@@ -150,7 +159,7 @@ uint32_t ReadSingleBatch(const vector<string> &filenames, const vector<int> &sha
   }
 
   auto start = mvshape_lite::MicroSecondsSinceEpoch();
-#pragma omp parallel for schedule(dynamic) num_threads(8)
+#pragma omp parallel for schedule(dynamic) num_threads(6)
   for (int i = 0; i < batch_size; ++i) {
     const auto &filename = filenames[i];
 

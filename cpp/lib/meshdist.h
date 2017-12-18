@@ -56,6 +56,13 @@ float MeshToMeshDistanceOneDirection(const std::vector<Triangle> &from,
                                      const std::vector<Triangle> &to,
                                      float sampling_density);
 
+float PointsToMeshDistanceOneDirection(const std::vector<std::array<float, 3>> &from,
+                                       const std::vector<Triangle> &to);
+
+float MeshToPointsDistanceOneDirection(const std::vector<Triangle> &from,
+                                       const std::vector<std::array<float, 3>> &target_points,
+                                       float sampling_density);
+
 float MeshToMeshDistance(const std::vector<Triangle> &a, const std::vector<Triangle> &b);
 
 }

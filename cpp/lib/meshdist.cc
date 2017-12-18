@@ -123,6 +123,8 @@ void SamplePointsOnTriangles(const std::vector<Triangle> &triangles, float densi
   *points *= perm; // permute columns
 }
 
+// TODO(daeyun): divide by mean distance
+
 float MeshToMeshDistanceOneDirection(const std::vector<Triangle> &from,
                                      const std::vector<Triangle> &to,
                                      float sampling_density) {
@@ -164,6 +166,103 @@ float MeshToMeshDistanceOneDirection(const std::vector<Triangle> &from,
 
   DLOG(INFO) << "distance: " << distance_sum;
   float rms = static_cast<float>(std::sqrt(distance_sum / static_cast<double>(point_list.size())));
+  DLOG(INFO) << "RMS: " << rms;
+  auto elapsed = mvshape::TimeSinceEpoch<std::milli>() - start;
+  DLOG(INFO) << "Time elapsed (CGAL): " << elapsed << " ms";
+
+  return rms;
+}
+
+float PointsToMeshDistanceOneDirection(const std::vector<std::array<float, 3>> &from,
+                                       const std::vector<Triangle> &to) {
+  std::list<K::Triangle_3> triangle_list;
+  for (const auto &triangle : to) {
+    triangle_list.emplace_back(K::Point_3{triangle.a[0], triangle.a[1], triangle.a[2]},
+                               K::Point_3{triangle.b[0], triangle.b[1], triangle.b[2]},
+                               K::Point_3{triangle.c[0], triangle.c[1], triangle.c[2]});
+  }
+  std::vector<K::Point_3> point_list;
+  for (int i = 0; i < from.size(); ++i) {
+    point_list.emplace_back(from[i][0], from[i][1], from[i][2]);
+  }
+
+  int num_triangles = static_cast<int>(to.size());
+  int num_points = static_cast<int>(from.size());
+
+  DLOG(INFO) << "Computing minimum distances from " << num_points
+             << " points to " << num_triangles << " triangles.";
+
+  auto start = mvshape::TimeSinceEpoch<std::milli>();
+  Tree tree(triangle_list.begin(), triangle_list.end());
+  tree.build();
+  tree.accelerate_distance_queries();
+  DLOG(INFO) << "Time elapsed for building tree (CGAL): " << mvshape::TimeSinceEpoch<std::milli>() - start;
+
+  float distance_sum = 0;
+
+#pragma omp parallel for if(USE_OMP) reduction(+:distance_sum) schedule(static)
+  for (int i = 0; i < point_list.size(); ++i) {
+    float dist = tree.squared_distance(point_list[i]);
+    distance_sum += dist;
+  }
+
+  DLOG(INFO) << "distance: " << distance_sum;
+  float rms = static_cast<float>(std::sqrt(distance_sum / static_cast<double>(point_list.size())));
+
+
+
+  DLOG(INFO) << "RMS: " << rms;
+  auto elapsed = mvshape::TimeSinceEpoch<std::milli>() - start;
+  DLOG(INFO) << "Time elapsed (CGAL): " << elapsed << " ms";
+
+  return rms;
+}
+
+float MeshToPointsDistanceOneDirection(const std::vector<Triangle> &from,
+                                       const std::vector<std::array<float, 3>> &target_points,
+                                       float sampling_density) {
+  std::list<K::Triangle_3> triangle_list;
+  for (const auto &triangle : from) {
+    triangle_list.emplace_back(K::Point_3{triangle.a[0], triangle.a[1], triangle.a[2]},
+                               K::Point_3{triangle.b[0], triangle.b[1], triangle.b[2]},
+                               K::Point_3{triangle.c[0], triangle.c[1], triangle.c[2]});
+  }
+
+  Points3d points_on_mesh;
+  SamplePointsOnTriangles(from, sampling_density, &points_on_mesh);
+
+  int num_source_points = static_cast<int>(points_on_mesh.cols());
+  int num_target_points = static_cast<int>(target_points.size());
+
+  DLOG(INFO) << "Computing minimum distances from " << num_source_points
+             << " triangles to " << num_target_points << " points.";
+
+  auto start = mvshape::TimeSinceEpoch<std::milli>();
+
+  float distance_sum = 0;
+
+#pragma omp parallel for if(USE_OMP) reduction(+:distance_sum) schedule(static)
+  for (int i = 0; i < num_source_points; ++i) {
+    const auto source_point = points_on_mesh.col(i);
+    double min_dist = kInfinity;
+    // TODO(daeyun): this is brute force
+    for (int j = 0; j < num_target_points; ++j) {
+      double dx = (source_point(0) - target_points[j][0]);
+      double dy = (source_point(1) - target_points[j][1]);
+      double dz = (source_point(2) - target_points[j][2]);
+      double dist = std::sqrt(dx * dx + dy * dy + dz * dz);
+      if (dist < min_dist) {
+        min_dist = dist;
+      }
+    }
+    distance_sum += min_dist;
+  }
+
+  DLOG(INFO) << "distance: " << distance_sum;
+  float rms = static_cast<float>(std::sqrt(distance_sum / static_cast<double>(num_source_points)));
+
+
+
   DLOG(INFO) << "RMS: " << rms;
   auto elapsed = mvshape::TimeSinceEpoch<std::milli>() - start;
   DLOG(INFO) << "Time elapsed (CGAL): " << elapsed << " ms";

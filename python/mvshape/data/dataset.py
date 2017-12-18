@@ -113,13 +113,15 @@ class ExampleLoader2(object):
                  tensors_to_read=('single_depth', 'multiview_depth'),
                  batch_size=100,
                  subset_tags=None,
-                 shuffle=False):
+                 shuffle=False, split_name=None):
         """
         :param metadata_filename:
             e.g. '/data/mvshape/out/splits/shrec12_examples_vpo/train.bin'
         :param subset_tags:
             For example, ['NOVELCLASS', 'NOVELMODEL', 'NOVELVIEW']
             None for training.
+        :param split_name:
+            Only used for shrec12 currently.
         """
         self.examples_filename = metadata_filename
         self.tensors_to_read = tensors_to_read
@@ -135,7 +137,53 @@ class ExampleLoader2(object):
         if subset_tags is not None:
             raise NotImplementedError()
 
-        self.total_num_examples = len(self.all_data['TRAIN'])
+        # TODO: making sure things aren't broken by the new logic. they keys should be one of TRAIN TEST VALIDATION and extra two input_resolution and target_resolution.
+        if 'shapenetcore' in metadata_filename or 'pascal3d' in metadata_filename:
+            assert split_name is None  # not needed for shapenetcore
+            assert len(self.all_data.keys()) == 3
+
+            if 'TRAIN' in self.all_data:
+                data_key = 'TRAIN'
+                assert 'TEST' not in self.all_data
+                assert 'VALIDATION' not in self.all_data
+                data_key = 'TRAIN'
+            elif 'TEST' in self.all_data:
+                data_key = 'TEST'
+                assert 'VALIDATION' not in self.all_data
+                assert 'TRAIN' not in self.all_data
+                data_key = 'TEST'
+            elif 'VALIDATION' in self.all_data:
+                data_key = 'VALIDATION'
+                assert 'TEST' not in self.all_data
+                assert 'TRAIN' not in self.all_data
+                data_key = 'VALIDATION'
+            else:
+                raise NotImplementedError()
+            # TODO: hack
+            self.data_being_used = self.all_data[data_key]
+
+            self.available_fields = {
+                'input_depth': ((None, 1, 128, 128), np.float32),
+                'input_rgb': ((None, 3, 128, 128), np.uint8),  # png
+                'target_depth': ((None, 6, 128, 128), np.float32),
+                'target_voxels': ((None, 1, 32, 32, 32), np.uint8),
+            }
+        elif 'shrec12' in metadata_filename:
+            if split_name is None:
+                self.data_being_used = self.all_data['TRAIN'] + self.all_data['VALIDATION']
+            else:
+                self.data_being_used = self.all_data[split_name]
+
+            self.available_fields = {
+                'input_depth': ((None, 1, 128, 128), np.float32),
+                'input_rgb': ((None, 3, 128, 128), np.uint8),  # png
+                'target_depth': ((None, 6, 128, 128), np.float32),
+                'target_voxels': ((None, 1, 48, 48, 48), np.uint8),
+            }
+        else:
+            raise NotImplementedError()
+
+        self.total_num_examples = len(self.data_being_used)
 
         self.current_batch_index = 0
         self.batched_examples = None
@@ -143,20 +191,14 @@ class ExampleLoader2(object):
 
         # Defines all available field names, sizes, and datatypes.
         # TODO: use the values in self.all_data
-        self.available_fields = {
-            'input_depth': ((None, 1, 128, 128), np.float32),
-            'input_rgb': ((None, 3, 128, 128), np.uint8),  # png
-            'target_depth': ((None, 6, 128, 128), np.float32),
-            'target_voxels': ((None, 1, 32, 32, 32), np.uint8),
-        }
 
         for fieldname in self.tensors_to_read:
             assert fieldname in self.available_fields, 'invalid field name {}'.format(fieldname)
 
     def reset(self):
         if self.shuffle:
-            random.shuffle(self.all_data['TRAIN'])
-        self.batched_examples = list(make_chunks(self.all_data['TRAIN'], n=self.batch_size))
+            random.shuffle(self.data_being_used)
+        self.batched_examples = list(make_chunks(self.data_being_used, n=self.batch_size))
         self.current_batch_index = 0
 
     def next(self):

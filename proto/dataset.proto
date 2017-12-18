@@ -51,6 +51,7 @@ enum Tag {
 enum DatasetName {
   SHREC12 = 0;
   SHAPENETCORE = 1;
+  PASCAL3D = 2;
 }
 
 // TODO: Change the names of single_depth and single_depth_raw.

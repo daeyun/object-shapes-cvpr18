@@ -1,5 +1,3 @@
-import random
-import time
 import ctypes
 from os import path
 from sys import platform
